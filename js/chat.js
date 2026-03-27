@@ -53,10 +53,10 @@ function receberMsgSSE(msg){
 
   const msgObj = {
     texto:      msg.texto||'',
-    tipo:       msg.tipoMsg||'text',
+    tipo:       msg.tipoMsg||msg.tipo||'text',
     direcao:    'entrada',
-    media_url:  msg.mediaUrl||null,
-    created_at: msg.createdAt||new Date().toISOString()
+    media_url:  msg.mediaUrl||msg.media_url||null,
+    created_at: msg.createdAt||msg.created_at||new Date().toISOString()
   };
 
   [cid, cidPorId, cidPorNumero, msg.numero].filter(Boolean).forEach(k=>{
@@ -201,24 +201,39 @@ async function evoSendText(telefone, texto){
 
 // ── RENDER ──
 function renderMsgItem(m){
-  const out = m.direcao==='saida' || m.out===true;
-  const t = m.created_at
+  const out  = m.direcao==='saida' || m.out===true;
+  const tipo = m.tipo||'text';
+  const url  = m.media_url||m.mediaUrl||null;
+  const t    = m.created_at
     ? new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
     : (m.time||'');
   let corpo = '';
-  if(m.tipo==='image' && m.media_url){
-    corpo = '<img src="'+m.media_url+'" style="max-width:220px;border-radius:8px;display:block;margin-bottom:4px" onerror="this.style.display=\'none\'">';
-    if(m.texto) corpo += '<div style="font-size:12px">'+m.texto+'</div>';
-  } else if((m.tipo==='audio'||m.tipo==='ptt') && m.media_url){
-    corpo = '<audio controls style="max-width:220px"><source src="'+m.media_url+'"></audio>';
-  } else if(m.tipo==='document' && m.media_url){
-    corpo = '<div>📎 <a href="'+m.media_url+'" target="_blank" style="color:var(--accent)">'+(m.texto||'Documento')+'</a></div>';
+  if(tipo==='image'){
+    if(url){
+      corpo = '<img src="'+url+'" style="max-width:220px;border-radius:8px;display:block;margin-bottom:4px">';
+      if(m.texto) corpo += '<div style="font-size:12px">'+m.texto+'</div>';
+    } else {
+      corpo = '<div style="font-size:12px;color:var(--muted)">[Imagem] '+(m.texto||'')+'</div>';
+    }
+  } else if(tipo==='audio'||tipo==='ptt'||tipo==='audioMessage'||tipo==='pttMessage'){
+    if(url){
+      corpo = '<audio controls style="max-width:220px;min-width:160px"><source src="'+url+'">Seu navegador nao suporta audio.</audio>';
+    } else {
+      corpo = '<div style="font-size:12px;color:var(--muted)">[Audio] '+(m.texto||'')+'</div>';
+    }
+  } else if(tipo==='document'){
+    if(url){
+      corpo = '<div>Documento: <a href="'+url+'" target="_blank" style="color:var(--accent)">'+(m.texto||'Abrir')+'</a></div>';
+    } else {
+      corpo = '<div style="font-size:12px;color:var(--muted)">[Documento] '+(m.texto||'')+'</div>';
+    }
   } else {
     const txt = (m.texto||m.text||'').replace(/</g,'&lt;').replace(/\n/g,'<br>');
     corpo = '<div style="white-space:pre-wrap">'+txt+'</div>';
   }
   return '<div class="msg '+(out?'msg-out':'msg-in')+'">'+corpo+'<div class="msg-time">'+t+'</div></div>';
 }
+
 
 async function renderChatMsgs(cid){
   const area = document.getElementById('chat-msgs');
@@ -465,47 +480,56 @@ function _comprimirImagem(file, maxWidth=800){
   });
 }
 
-// ── GRAVAÇÃO DE ÁUDIO ──
-let mediaRecorder = null, audioChunks = [], gravando = false;
+// ── GRAVAÇÃO DE ÁUDIO (segurar para gravar) ──
+let mediaRecorder = null, audioChunks = [], _streamAtivo = null;
 
-async function toggleGravarAudio(){
+async function iniciarGravacao(e){
+  if(e) e.preventDefault();
+  if(mediaRecorder && mediaRecorder.state==='recording') return;
   const btn = document.getElementById('btn-mic');
-  if(!gravando){
-    try{
-      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-      audioChunks = [];
-      // Detecta formato suportado pelo browser
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-        ? 'audio/webm'
-        : '';
-      mediaRecorder = new MediaRecorder(stream, mimeType ? {mimeType} : {});
-      mediaRecorder.ondataavailable = e=>{ if(e.data.size>0) audioChunks.push(e.data); };
-      mediaRecorder.onstop = async()=>{
-        const blob = new Blob(audioChunks, {type:'audio/webm'});
-        _mediaFile = new File([blob], 'audio_'+Date.now()+'.ogg', {type:'audio/ogg'});
-        _mediaType = 'audio';
-        stream.getTracks().forEach(t=>t.stop());
-        const prev = document.getElementById('media-preview');
-        const prevTxt = document.getElementById('media-preview-txt');
-        if(prev){ prev.style.display = 'flex'; }
-        if(prevTxt) prevTxt.textContent = '🎙️ Áudio gravado ('+Math.round(blob.size/1024)+'KB) — clique Enviar para enviar';
-        if(btn){ btn.textContent='🎙️'; btn.style.background='var(--bg3)'; btn.style.borderColor='var(--border2)'; }
-        gravando = false;
-        notify('Áudio gravado! Clique Enviar.','success');
-      };
-      mediaRecorder.start();
-      gravando = true;
-      if(btn){ btn.textContent='⏹️'; btn.style.background='rgba(239,68,68,.15)'; btn.style.borderColor='var(--red)'; }
-      notify('Gravando... Clique ⏹️ para parar','success');
-    }catch(e){
-      notify('Erro ao acessar microfone: '+e.message,'error');
-    }
-  } else {
-    if(mediaRecorder && mediaRecorder.state!=='inactive') mediaRecorder.stop();
+  try{
+    _streamAtivo = await navigator.mediaDevices.getUserMedia({audio:true});
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(_streamAtivo);
+    mediaRecorder.ondataavailable = ev=>{ if(ev.data.size>0) audioChunks.push(ev.data); };
+    mediaRecorder.onstop = ()=>{
+      if(_streamAtivo){ _streamAtivo.getTracks().forEach(t=>t.stop()); _streamAtivo=null; }
+      if(audioChunks.length===0){ resetMicBtn(); return; }
+      const blob = new Blob(audioChunks,{type:'audio/ogg;codecs=opus'});
+      if(blob.size < 500){ notify('Áudio muito curto — segure mais tempo','error'); resetMicBtn(); return; }
+      _mediaFile = new File([blob],'audio_'+Date.now()+'.ogg',{type:'audio/ogg'});
+      _mediaType = 'audio';
+      resetMicBtn();
+      // Envia automaticamente
+      const c = allClientes.find(x=>x.id===activeChatId);
+      _enviarMidiaWpp(c);
+    };
+    mediaRecorder.start();
+    if(btn){ btn.textContent='🔴'; btn.style.background='rgba(239,68,68,.2)'; btn.style.borderColor='var(--red)'; btn.style.color='var(--red)'; }
+    notify('Gravando... Solte para enviar 🎙️','success');
+  }catch(err){
+    notify('Erro no microfone: '+err.message,'error');
+    resetMicBtn();
   }
 }
+
+function pararGravacao(){
+  if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop();
+}
+
+function pararGravacaoSemEnviar(){
+  if(mediaRecorder && mediaRecorder.state==='recording'){
+    audioChunks = [];
+    mediaRecorder.stop();
+  }
+  resetMicBtn();
+}
+
+function resetMicBtn(){
+  const btn = document.getElementById('btn-mic');
+  if(btn){ btn.textContent='🎙️'; btn.style.background='var(--bg3)'; btn.style.borderColor='var(--border2)'; btn.style.color=''; }
+}
+
 
 // ── CONTRATOS ──
 async function enviarContratoWpp(){
