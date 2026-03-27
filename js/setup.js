@@ -56,11 +56,14 @@ async function setupConectar(){
 }
 
 // ══ AUTH ══
+// Só login permitido — criação de conta apenas pelo admin dentro do sistema
 function switchTab(t){
-  document.getElementById('tab-login').classList.toggle('active',t==='login');
-  document.getElementById('tab-register').classList.toggle('active',t==='register');
-  document.getElementById('form-login').style.display=t==='login'?'flex':'none';
-  document.getElementById('form-register').style.display=t==='register'?'flex':'none';
+  document.getElementById('tab-login').classList.add('active');
+  const tabReg = document.getElementById('tab-register');
+  if(tabReg) tabReg.classList.remove('active');
+  document.getElementById('form-login').style.display='flex';
+  const formReg = document.getElementById('form-register');
+  if(formReg) formReg.style.display='none';
 }
 
 async function fazerLogin(){
@@ -74,22 +77,9 @@ async function fazerLogin(){
   await carregarPerfil(data.user);
 }
 
+// Bloqueado publicamente — só admin cria usuários dentro do sistema
 async function fazerCadastro(){
-  const nome=document.getElementById('r-nome').value.trim();
-  const email=document.getElementById('r-email').value.trim();
-  const senha=document.getElementById('r-senha').value;
-  const perfil=document.getElementById('r-perfil').value;
-  const errEl=document.getElementById('register-err');
-  const okEl=document.getElementById('register-ok');
-  errEl.style.display='none'; okEl.style.display='none';
-  if(!nome||!email||!senha){errEl.textContent='Preencha todos os campos.';errEl.style.display='block';return;}
-  const {error}=await sb.auth.signUp({
-    email,password:senha,
-    options:{data:{nome,perfil}}
-  });
-  if(error){errEl.textContent='❌ '+error.message;errEl.style.display='block';return;}
-  okEl.textContent='✓ Conta criada! Verifique seu email e depois faça login.';
-  okEl.style.display='block';
+  notify('Criação de conta desativada. Solicite acesso ao administrador.','error');
 }
 
 async function esqueceuSenha(){
@@ -115,7 +105,6 @@ async function carregarPerfil(user){
 // ══ APP INIT ══
 function iniciarApp(){
   const p=currentPerfil;
-  // Sidebar
   const nav=document.getElementById('sidebar-nav');
   const menus=ROLE_MENUS[p.perfil]||ROLE_MENUS.atendente;
   nav.innerHTML=menus.map(m=>{
@@ -123,7 +112,6 @@ function iniciarApp(){
     return `<div class="nav-item" id="nav-${m.id}" onclick="goPage('${m.id}',this)"><span class="icon">${m.icon}</span>${m.label}</div>`;
   }).join('');
 
-  // User info
   document.getElementById('sb-avatar').textContent=(p.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
   document.getElementById('sb-nome').textContent=p.nome;
   document.getElementById('sb-role').textContent=ROLE_LABELS[p.perfil];
@@ -136,3 +124,36 @@ function iniciarApp(){
   carregarTudo();
 }
 
+// ══ CRIAR USUÁRIO (só admin, dentro do sistema na aba Usuários) ══
+async function criarUsuarioAdmin(){
+  if(currentPerfil?.perfil !== 'admin'){
+    notify('Apenas administradores podem criar usuários.','error');
+    return;
+  }
+  const nome  = document.getElementById('r-nome')?.value.trim();
+  const email = document.getElementById('r-email')?.value.trim();
+  const senha = document.getElementById('r-senha')?.value;
+  const perfil= document.getElementById('r-perfil')?.value;
+  const errEl = document.getElementById('register-err');
+  const okEl  = document.getElementById('register-ok');
+  if(errEl) errEl.style.display='none';
+  if(okEl)  okEl.style.display='none';
+
+  if(!nome||!email||!senha){
+    if(errEl){errEl.textContent='Preencha todos os campos.';errEl.style.display='block';}
+    return;
+  }
+  const {error}=await sb.auth.signUp({
+    email, password:senha,
+    options:{data:{nome,perfil}}
+  });
+  if(error){
+    if(errEl){errEl.textContent='❌ '+error.message;errEl.style.display='block';}
+    return;
+  }
+  if(okEl){okEl.textContent='✓ Usuário criado! Peça para ele confirmar o email.';okEl.style.display='block';}
+  notify('Usuário '+nome+' criado com sucesso!','success');
+  ['r-nome','r-email','r-senha'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+}
