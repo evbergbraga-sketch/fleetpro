@@ -10,176 +10,35 @@
 </head>
 <body>
 
-<body>
-
-<!-- ════════════════════════════════════════
-  LAYER 1 — SETUP (primeira vez)
-════════════════════════════════════════ -->
+<!-- LAYER 1 — SETUP -->
 <div id="layer-setup" class="layer active">
   <div class="setup-box">
     <div class="setup-logo">⬡ FleetPro</div>
     <div class="setup-sub">Configure o Supabase para começar</div>
-
     <div class="setup-step"><div class="step-num">1</div><div class="step-text">Acesse <strong>supabase.com</strong> → crie um projeto → vá em <strong>Project Settings → API</strong> e copie a <strong>Project URL</strong> e a chave <strong>anon public</strong>.</div></div>
     <div class="setup-step"><div class="step-num">2</div><div class="step-text">No painel, vá em <strong>SQL Editor</strong> → cole e execute o SQL abaixo para criar todas as tabelas incluindo autenticação.</div></div>
     <div class="setup-step"><div class="step-num">3</div><div class="step-text">Em <strong>Authentication → Providers</strong>, certifique-se que <strong>Email</strong> está habilitado. Cole as credenciais e conecte.</div></div>
-
     <span class="sql-toggle" onclick="toggleSQL()">▸ Mostrar SQL completo (com auth + perfis)</span>
     <div class="sql-panel" id="sql-panel">
       <button class="copy-sql-btn" onclick="copySQL()">📋 Copiar tudo</button>
-      <pre id="sql-text">-- ═══════════════════════════════════════════
--- FLEETPRO — Schema completo com Auth + Perfis
--- Execute no SQL Editor do Supabase
--- ═══════════════════════════════════════════
-
+      <pre id="sql-text">-- FLEETPRO — Schema completo
 create extension if not exists "uuid-ossp";
-
--- ── PERFIS DE USUÁRIO (vinculado ao auth.users) ──
-create table perfis (
-  id        uuid primary key references auth.users(id) on delete cascade,
-  nome      text not null,
-  email     text not null,
-  perfil    text not null default 'atendente'
-            check (perfil in ('admin','atendente','investidor')),
-  ativo     boolean default true,
-  created_at timestamptz default now()
-);
-
--- ── CLIENTES ──
-create table clientes (
-  id           uuid primary key default uuid_generate_v4(),
-  nome         text not null,
-  cpf          text unique not null,
-  email        text,
-  telefone     text,
-  cnh          text,
-  cnh_validade date,
-  endereco     text,
-  observacoes  text,
-  created_at   timestamptz default now()
-);
-
--- ── VEÍCULOS ──
-create table veiculos (
-  id          uuid primary key default uuid_generate_v4(),
-  tipo        text not null check (tipo in ('carro','moto')),
-  marca       text not null,
-  modelo      text not null,
-  placa       text unique not null,
-  ano         int,
-  cor         text,
-  cambio      text,
-  km_atual    int default 0,
-  diaria      numeric(10,2) not null,
-  status      text default 'disponivel'
-              check (status in ('disponivel','alugado','manutencao')),
-  observacoes text,
-  created_at  timestamptz default now()
-);
-
--- ── LOCAÇÕES ──
-create table locacoes (
-  id           uuid primary key default uuid_generate_v4(),
-  veiculo_id   uuid references veiculos(id),
-  cliente_id   uuid references clientes(id),
-  data_inicio  date not null,
-  data_fim     date not null,
-  km_inicial   int,
-  km_final     int,
-  diaria       numeric(10,2),
-  total        numeric(10,2),
-  status       text default 'ativa'
-               check (status in ('ativa','encerrada','cancelada')),
-  observacoes  text,
-  criado_por   uuid references auth.users(id),
-  created_at   timestamptz default now()
-);
-
--- ── MANUTENÇÕES ──
-create table manutencoes (
-  id          uuid primary key default uuid_generate_v4(),
-  veiculo_id  uuid references veiculos(id),
-  tipo        text not null,
-  descricao   text,
-  custo       numeric(10,2),
-  data_inicio date not null,
-  data_fim    date,
-  oficina     text,
-  status      text default 'pendente'
-              check (status in ('pendente','em_andamento','concluida')),
-  created_at  timestamptz default now()
-);
-
--- ── RLS ──
-alter table perfis      enable row level security;
-alter table clientes    enable row level security;
-alter table veiculos    enable row level security;
-alter table locacoes    enable row level security;
-alter table manutencoes enable row level security;
-
--- Perfis: cada user vê o próprio; admin vê todos
-create policy "Ver proprio perfil" on perfis for select using (auth.uid() = id);
-create policy "Admin ve todos perfis" on perfis for all using (
-  exists (select 1 from perfis where id = auth.uid() and perfil = 'admin')
-);
-
--- Veículos: todos autenticados leem; só admin/atendente escrevem
-create policy "Autenticados leem veiculos" on veiculos for select using (auth.role() = 'authenticated');
-create policy "Admin atendente escrevem veiculos" on veiculos for all using (
-  exists (select 1 from perfis where id = auth.uid() and perfil in ('admin','atendente'))
-);
-
--- Clientes: admin e atendente acessam
-create policy "Admin atendente clientes" on clientes for all using (
-  exists (select 1 from perfis where id = auth.uid() and perfil in ('admin','atendente'))
-);
-
--- Locações: todos leem; admin/atendente escrevem
-create policy "Autenticados leem locacoes" on locacoes for select using (auth.role() = 'authenticated');
-create policy "Admin atendente escrevem locacoes" on locacoes for all using (
-  exists (select 1 from perfis where id = auth.uid() and perfil in ('admin','atendente'))
-);
-
--- Manutenções: todos leem; admin escreve
-create policy "Autenticados leem manutencoes" on manutencoes for select using (auth.role() = 'authenticated');
-create policy "Admin escreve manutencoes" on manutencoes for all using (
-  exists (select 1 from perfis where id = auth.uid() and perfil = 'admin')
-);
-
--- ── TRIGGER: criar perfil ao registrar usuário ──
-create or replace function handle_new_user()
-returns trigger as $$
-begin
-  insert into perfis (id, nome, email, perfil)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data->>'nome', split_part(new.email,'@',1)),
-    new.email,
-    coalesce(new.raw_user_meta_data->>'perfil', 'atendente')
-  );
-  return new;
-end;
-$$ language plpgsql security definer;
-
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function handle_new_user();
-
--- ── DADOS DE EXEMPLO ──
-insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,status) values
-  ('carro','Honda','Civic','ABC-1234',2022,'Prata','Automatico',32100,180,'disponivel'),
-  ('carro','Chevrolet','Onix','DEF-5678',2021,'Branco','Manual',48900,120,'disponivel'),
-  ('carro','Hyundai','HB20','PQR-2244',2023,'Vermelho','Automatico',12400,160,'disponivel'),
-  ('moto','Honda','CB 300','XYZ-9988',2023,'Preta','Manual',8400,90,'disponivel'),
-  ('moto','Yamaha','Fazer 250','GHI-3322',2022,'Azul','Manual',15700,80,'disponivel'),
-  ('moto','Honda','Biz 125','JKL-5544',2021,'Vermelha','Manual',22000,60,'disponivel');
-
-insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
-  ('Ana Lima','123.456.789-00','<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="25444b44654048444c490b464a48">[email&#160;protected]</a>','(21) 99999-1111','AB123456','2028-06-15'),
-  ('Carlos M.','987.654.321-00','<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="016260736d6e7241646c60686d2f626e6c">[email&#160;protected]</a>','(21) 98888-2222','CD789012','2025-04-30'),
-  ('Fernanda T.','456.789.123-00','<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bbdddec9d5dad5dfdafbded6dad2d795d8d4d6">[email&#160;protected]</a>','(21) 97777-3333','EF345678','2027-11-20');</pre>
+create table perfis (id uuid primary key references auth.users(id) on delete cascade, nome text not null, email text not null, perfil text not null default 'atendente' check (perfil in ('admin','atendente','investidor')), ativo boolean default true, created_at timestamptz default now());
+create table clientes (id uuid primary key default uuid_generate_v4(), nome text not null, cpf text unique not null, email text, telefone text, cnh text, cnh_validade date, endereco text, observacoes text, created_at timestamptz default now());
+create table veiculos (id uuid primary key default uuid_generate_v4(), tipo text not null check (tipo in ('carro','moto')), marca text not null, modelo text not null, placa text unique not null, ano int, cor text, cambio text, km_atual int default 0, diaria numeric(10,2) not null, status text default 'disponivel' check (status in ('disponivel','alugado','manutencao')), observacoes text, created_at timestamptz default now());
+create table locacoes (id uuid primary key default uuid_generate_v4(), veiculo_id uuid references veiculos(id), cliente_id uuid references clientes(id), data_inicio date not null, data_fim date not null, km_inicial int, km_final int, diaria numeric(10,2), total numeric(10,2), status text default 'ativa' check (status in ('ativa','encerrada','cancelada')), observacoes text, criado_por uuid references auth.users(id), created_at timestamptz default now());
+create table manutencoes (id uuid primary key default uuid_generate_v4(), veiculo_id uuid references veiculos(id), tipo text not null, descricao text, custo numeric(10,2), data_inicio date not null, data_fim date, oficina text, status text default 'pendente' check (status in ('pendente','em_andamento','concluida')), created_at timestamptz default now());
+create table wpp_mensagens (id uuid primary key default uuid_generate_v4(), cliente_id uuid references clientes(id), numero text not null, texto text, tipo text default 'text' check (tipo in ('text','image','audio','document')), direcao text default 'saida' check (direcao in ('saida','entrada')), media_url text, created_at timestamptz default now());
+alter table perfis disable row level security;
+alter table clientes disable row level security;
+alter table veiculos disable row level security;
+alter table locacoes disable row level security;
+alter table manutencoes disable row level security;
+alter table wpp_mensagens disable row level security;
+create or replace function handle_new_user() returns trigger as $$ begin insert into perfis (id, nome, email, perfil) values (new.id, coalesce(new.raw_user_meta_data->>'nome', split_part(new.email,'@',1)), new.email, coalesce(new.raw_user_meta_data->>'perfil', 'atendente')); return new; end; $$ language plpgsql security definer;
+create trigger on_auth_user_created after insert on auth.users for each row execute function handle_new_user();
+insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,status) values ('carro','Honda','Civic','ABC-1234',2022,'Prata','Automatico',32100,180,'disponivel'),('carro','Chevrolet','Onix','DEF-5678',2021,'Branco','Manual',48900,120,'disponivel'),('moto','Honda','CB 300','XYZ-9988',2023,'Preta','Manual',8400,90,'disponivel');</pre>
     </div>
-
     <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px;">
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:5px;">📌 Project URL</label>
@@ -189,15 +48,11 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:5px;">🔑 Chave Anon (pública)</label>
         <input class="setup-input" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." autocomplete="off" spellcheck="false" style="margin-bottom:0" oninput="this.style.borderColor=this.value.startsWith('eyJ')?'var(--green)':'var(--border2)'">
-        <div style="font-size:11px;color:var(--muted2);margin-top:4px">Project Settings → API → <strong style="color:var(--text)">anon public</strong> (começa com <code style="color:var(--accent);background:var(--bg);padding:1px 5px;border-radius:4px">eyJ</code>)</div>
+        <div style="font-size:11px;color:var(--muted2);margin-top:4px">Project Settings → API → <strong style="color:var(--text)">anon public</strong></div>
       </div>
-      <div id="setup-err" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--red);line-height:1.5"></div>
-      <div id="setup-ok"  style="display:none;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--green)"></div>
+      <div id="setup-err" style="display:none"></div>
+      <div id="setup-ok"  style="display:none"></div>
       <button class="setup-btn" id="setup-btn" onclick="setupConectar()">⚡ Conectar ao Supabase</button>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div style="padding:10px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.5">✅ <strong style="color:var(--text)">URL correta:</strong><br><code style="color:var(--green);font-size:10px">https://abc123.supabase.co</code></div>
-        <div style="padding:10px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.5">✅ <strong style="color:var(--text)">Chave correta:</strong><br><code style="color:var(--green);font-size:10px">eyJhbGci... (longa, começa com eyJ)</code></div>
-      </div>
     </div>
     <div style="text-align:center;margin-top:14px">
       <a href="https://supabase.com" target="_blank" style="font-size:12px;color:var(--blue)">Criar conta grátis no Supabase →</a>
@@ -206,11 +61,8 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
     </div>
   </div>
 </div>
-</div>
 
-<!-- ════════════════════════════════════════
-  LAYER 2 — LOGIN / CADASTRO
-════════════════════════════════════════ -->
+<!-- LAYER 2 — LOGIN -->
 <div id="layer-login" class="layer">
   <div class="login-wrap">
     <div class="login-left">
@@ -233,51 +85,26 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
     <div class="login-right">
       <div class="login-title">Bem-vindo</div>
       <div class="login-sub">Acesse sua conta para continuar</div>
+      <!-- SÓ BOTÃO ENTRAR — sem criar conta -->
       <div class="login-tabs">
-        <div class="login-tab active" id="tab-login" onclick="switchTab('login')">Entrar</div>
-        <div class="login-tab" id="tab-register" onclick="switchTab('register')">Criar conta</div>
+        <div class="login-tab active" id="tab-login">Entrar</div>
       </div>
-
-      <!-- LOGIN FORM -->
       <div id="form-login" class="login-form">
         <input class="login-input" id="l-email" type="email" placeholder="seu@email.com">
-        <input class="login-input" id="l-senha" type="password" placeholder="Senha">
+        <input class="login-input" id="l-senha" type="password" placeholder="Senha" onkeydown="if(event.key==='Enter') fazerLogin()">
         <div class="login-err" id="login-err"></div>
         <button class="login-btn" onclick="fazerLogin()">Entrar →</button>
         <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px;cursor:pointer" onclick="esqueceuSenha()">Esqueci minha senha</div>
-      </div>
-
-      <!-- REGISTER FORM -->
-      <div id="form-register" class="login-form" style="display:none">
-        <input class="login-input" id="r-nome" placeholder="Nome completo">
-        <input class="login-input" id="r-email" type="email" placeholder="seu@email.com">
-        <input class="login-input" id="r-senha" type="password" placeholder="Senha (mín. 6 caracteres)">
-        <select class="login-select" id="r-perfil">
-          <option value="atendente">🧑‍💼 Atendente</option>
-          <option value="admin">👑 Administrador</option>
-          <option value="investidor">📈 Investidor</option>
-        </select>
-        <div style="font-size:11px;color:var(--muted2);background:var(--bg3);padding:10px;border-radius:8px;border:1px solid var(--border)">
-          ⚠️ Apenas admins devem criar contas de Admin. Atendentes e Investidores não têm acesso a configurações do sistema.
-        </div>
-        <div class="login-err" id="register-err"></div>
-        <div class="login-ok"  id="register-ok"></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════
-  LAYER 3 — APP
-════════════════════════════════════════ -->
+<!-- LAYER 3 — APP -->
 <div id="layer-app" class="layer">
-
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="logo"><div class="logo-mark">⬡ FleetPro</div><div class="logo-sub">Sistema de Locadora</div></div>
-    <nav id="sidebar-nav">
-      <!-- renderizado dinamicamente por perfil -->
-    </nav>
+    <nav id="sidebar-nav"></nav>
     <div class="sidebar-footer">
       <div class="user-pill">
         <div class="avatar" id="sb-avatar">?</div>
@@ -291,7 +118,6 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
     </div>
   </aside>
 
-  <!-- MAIN -->
   <main class="main">
     <header class="topbar">
       <div class="page-title" id="page-title">Dashboard</div>
@@ -313,11 +139,9 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
         </div>
         <div class="grid2">
           <div class="card"><div class="card-header"><span class="card-title">Locações em andamento</span></div>
-            <table><thead><tr><th>Veículo</th><th>Cliente</th><th>Devolução</th><th>Status</th></tr></thead>
-            <tbody id="dash-loc"></tbody></table></div>
+            <table><thead><tr><th>Veículo</th><th>Cliente</th><th>Devolução</th><th>Status</th></tr></thead><tbody id="dash-loc"></tbody></table></div>
           <div class="card"><div class="card-header"><span class="card-title">Manutenções</span></div>
-            <table><thead><tr><th>Veículo</th><th>Serviço</th><th>Status</th></tr></thead>
-            <tbody id="dash-man"></tbody></table></div>
+            <table><thead><tr><th>Veículo</th><th>Serviço</th><th>Status</th></tr></thead><tbody id="dash-man"></tbody></table></div>
         </div>
       </div>
 
@@ -328,8 +152,7 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
           <select id="f-carros" onchange="renderVeiculos()"><option value="">Todos</option><option value="disponivel">Disponível</option><option value="alugado">Alugado</option><option value="manutencao">Manutenção</option></select>
           <button class="btn btn-primary" id="btn-add-carro" onclick="openModal('veiculo','carro')">+ Cadastrar</button>
         </div>
-        <div class="card"><table><thead><tr><th>Veículo</th><th>Placa</th><th>Ano</th><th>Km</th><th>Diária</th><th>Status</th><th></th></tr></thead>
-        <tbody id="tb-carros"></tbody></table></div>
+        <div class="card"><table><thead><tr><th>Veículo</th><th>Placa</th><th>Ano</th><th>Km</th><th>Diária</th><th>Status</th><th></th></tr></thead><tbody id="tb-carros"></tbody></table></div>
       </div>
 
       <!-- MOTOS -->
@@ -339,8 +162,7 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
           <select id="f-motos" onchange="renderVeiculos()"><option value="">Todos</option><option value="disponivel">Disponível</option><option value="alugado">Alugado</option><option value="manutencao">Manutenção</option></select>
           <button class="btn btn-primary" id="btn-add-moto" onclick="openModal('veiculo','moto')">+ Cadastrar</button>
         </div>
-        <div class="card"><table><thead><tr><th>Veículo</th><th>Placa</th><th>Ano</th><th>Km</th><th>Diária</th><th>Status</th><th></th></tr></thead>
-        <tbody id="tb-motos"></tbody></table></div>
+        <div class="card"><table><thead><tr><th>Veículo</th><th>Placa</th><th>Ano</th><th>Km</th><th>Diária</th><th>Status</th><th></th></tr></thead><tbody id="tb-motos"></tbody></table></div>
       </div>
 
       <!-- HISTÓRICO -->
@@ -365,8 +187,7 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
           <input class="input-flex" type="text" id="s-clientes" placeholder="🔍  Nome, CPF ou telefone..." oninput="renderClientes()">
           <button class="btn btn-primary" id="btn-add-cliente" onclick="openModal('cliente')">+ Novo cliente</button>
         </div>
-        <div class="card"><table><thead><tr><th>Cliente</th><th>CPF</th><th>Telefone</th><th>CNH validade</th><th>Status CNH</th><th></th></tr></thead>
-        <tbody id="tb-clientes"></tbody></table></div>
+        <div class="card"><table><thead><tr><th>Cliente</th><th>CPF</th><th>Telefone</th><th>CNH validade</th><th>Status CNH</th><th></th></tr></thead><tbody id="tb-clientes"></tbody></table></div>
       </div>
 
       <!-- CONTRATOS -->
@@ -440,7 +261,7 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
       <div class="page" id="page-chat" style="height:100%;overflow:hidden;padding:0;">
         <div class="chat-layout" style="height:calc(100vh - 130px);">
           <div class="chat-list">
-            <div class="chat-list-hdr">💬 WhatsApp<div style="font-size:11px;font-weight:400;color:var(--green);margin-top:2px">● Conectado</div></div>
+            <div class="chat-list-hdr">💬 WhatsApp<div id="chat-wpp-status" style="font-size:11px;font-weight:400;color:var(--muted);margin-top:2px">● Desconectado</div></div>
             <div style="padding:10px"><input type="text" id="chat-search" placeholder="🔍  Buscar..." oninput="filtrarContatos()" style="width:100%;font-size:12px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:8px;outline:none"></div>
             <div id="chat-contacts"></div>
           </div>
@@ -456,49 +277,35 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
             <div class="chat-msgs scrollbar-thin" id="chat-msgs"><div style="text-align:center;font-size:12px;color:var(--muted2);margin:20px 0">Selecione uma conversa</div></div>
             <div class="chat-input-area" style="flex-direction:column;gap:8px">
               <div style="display:flex;gap:6px;align-items:center">
-                <!-- Botão enviar imagem -->
-                <label title="Enviar imagem" style="cursor:pointer;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;font-size:16px;display:flex;align-items:center">
-                  🖼️<input type="file" accept="image/*" style="display:none" onchange="enviarArquivo(this,'image')">
-                </label>
-                <!-- Botão enviar documento -->
-                <label title="Enviar documento" style="cursor:pointer;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;font-size:16px;display:flex;align-items:center">
-                  📎<input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="enviarArquivo(this,'document')">
-                </label>
-                <!-- Botão gravar áudio pelo microfone -->
-                <button id="btn-mic" title="Gravar áudio" onclick="toggleGravarAudio()" style="cursor:pointer;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;font-size:16px;transition:all .2s">🎙️</button>
-                <!-- Ou enviar arquivo de áudio -->
-                <label title="Enviar arquivo de áudio" style="cursor:pointer;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;font-size:16px;display:flex;align-items:center">
-                  🎵<input type="file" accept="audio/*" style="display:none" onchange="enviarArquivo(this,'audio')">
-                </label>
-                <!-- Botão enviar contrato -->
-                <button title="Enviar último contrato pelo WhatsApp" onclick="enviarContratoChat()" style="cursor:pointer;padding:6px 10px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);border-radius:8px;font-size:16px" id="btn-enviar-contrato">📄</button>
+                <label title="Enviar imagem" style="cursor:pointer;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;font-size:16px;display:flex;align-items:center">🖼️<input type="file" accept="image/*" style="display:none" onchange="enviarArquivo(this,'image')"></label>
+                <label title="Enviar documento" style="cursor:pointer;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;font-size:16px;display:flex;align-items:center">📎<input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="enviarArquivo(this,'document')"></label>
+                <label title="Enviar áudio" style="cursor:pointer;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;font-size:16px;display:flex;align-items:center">🎵<input type="file" accept="audio/*" style="display:none" onchange="enviarArquivo(this,'audio')"></label>
+                <button title="Enviar contrato pelo WhatsApp" onclick="enviarContratoWpp()" style="cursor:pointer;padding:6px 10px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);border-radius:8px;font-size:16px">📄</button>
                 <input class="chat-input" id="chat-msg-input" placeholder="Digite uma mensagem..." style="flex:1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}">
                 <button class="btn btn-primary" onclick="sendMsg()">Enviar</button>
               </div>
-              <div id="media-preview" style="display:none;font-size:12px;color:var(--muted);padding:4px 8px;background:var(--bg3);border-radius:6px;display:flex;align-items:center;gap:8px">
+              <div id="media-preview" style="display:none;font-size:12px;color:var(--muted);padding:4px 8px;background:var(--bg3);border-radius:6px;align-items:center;gap:8px">
                 <span id="media-preview-txt"></span>
                 <button onclick="cancelarMidia()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
               </div>
             </div>
           </div>
           <div class="chat-side scrollbar-thin">
-            <div id="wpp-status-badge" class="wpp-ok" style="cursor:pointer" onclick="document.getElementById('wpp-cfg-body').style.display=document.getElementById('wpp-cfg-body').style.display==='none'?'block':'none'"><div class="wdot" id="wpp-dot"></div><span id="wpp-status-txt">WhatsApp conectado</span> <span style="font-size:10px;color:var(--muted)">⚙</span></div>
-
-            <!-- Config WPP - sempre visível -->
+            <div id="wpp-status-badge" class="wpp-ok" style="cursor:pointer" onclick="document.getElementById('wpp-cfg-body').style.display=document.getElementById('wpp-cfg-body').style.display==='none'?'block':'none'">
+              <div class="wdot" id="wpp-dot"></div><span id="wpp-status-txt">Desconectado</span> <span style="font-size:10px;color:var(--muted)">⚙</span>
+            </div>
             <div style="margin-bottom:14px">
               <div class="cst" style="cursor:pointer" onclick="document.getElementById('wpp-cfg-body').style.display=document.getElementById('wpp-cfg-body').style.display==='none'?'block':'none'">Conexão WPP <span style="color:var(--accent)">⚙ configurar</span></div>
               <div id="wpp-cfg-body" style="display:none">
                 <div class="form-group" style="margin-bottom:6px"><label>URL Evolution API</label><input type="text" id="wpp-url" placeholder="https://evo.seudominio.com" style="width:100%;font-size:12px"></div>
                 <div class="form-group" style="margin-bottom:6px"><label>API Key</label><input type="text" id="wpp-apikey" placeholder="sua-api-key" style="width:100%;font-size:12px"></div>
-                <div class="form-group" style="margin-bottom:6px"><label>Instância</label><input type="text" id="wpp-inst" placeholder="fleetpro" style="width:100%;font-size:12px" value="fleetpro"></div>
+                <div class="form-group" style="margin-bottom:6px"><label>Instância</label><input type="text" id="wpp-inst" placeholder="fleetpro" style="width:100%;font-size:12px"></div>
                 <div class="form-group" style="margin-bottom:6px"><label>URL Bridge Server</label><input type="text" id="wpp-bridge" placeholder="https://bridge.seudominio.com" style="width:100%;font-size:12px"></div>
-                <div class="form-group" style="margin-bottom:8px"><label>Secret</label><input type="text" id="wpp-secret" placeholder="FleetPro2025" style="width:100%;font-size:12px" value="FleetPro2025"></div>
+                <div class="form-group" style="margin-bottom:8px"><label>Secret</label><input type="text" id="wpp-secret" placeholder="FleetPro2025" style="width:100%;font-size:12px"></div>
                 <button class="btn btn-primary" style="width:100%;font-size:12px;margin-bottom:6px" onclick="conectarWpp()">⚡ Conectar</button>
                 <div style="font-size:10px;color:var(--muted2);line-height:1.4" id="webhook-url-display"></div>
               </div>
             </div>
-
-            <!-- Respostas rápidas -->
             <div style="margin-bottom:14px"><div class="cst">Respostas rápidas</div>
               <div class="qr" onclick="setMsg(this.textContent)">Olá! Como posso ajudar? 😊</div>
               <div class="qr" onclick="setMsg(this.textContent)">Carros a partir de R$ 120/dia. Motos a partir de R$ 60/dia.</div>
@@ -507,14 +314,10 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
               <div class="qr" onclick="setMsg(this.textContent)">Devolução das 8h às 19h.</div>
               <div class="qr" onclick="setMsg(this.textContent)">Veículo entregue! Obrigado pela preferência 🚗✅</div>
             </div>
-
-            <!-- Personalização -->
             <div><div class="cst">Assinatura</div>
               <div class="form-group" style="margin-bottom:8px"><label>Nome da locadora</label><input type="text" id="wpp-nome-locadora" value="FleetPro Locadora" style="width:100%;font-size:12px"></div>
               <div class="form-group" style="margin-bottom:8px"><label>Assinatura automática</label><textarea id="wpp-assinatura" rows="2" style="width:100%;font-size:12px;resize:none">— Equipe FleetPro 🚗🏍️</textarea></div>
-              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-bottom:8px">
-                <input type="checkbox" id="wpp-usar-assin" checked> Adicionar assinatura
-              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-bottom:8px"><input type="checkbox" id="wpp-usar-assin" checked> Adicionar assinatura</label>
               <button class="btn btn-ghost" style="width:100%;font-size:12px" onclick="salvarPersonalizacao()">Salvar</button>
             </div>
           </div>
@@ -528,15 +331,13 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
             <div style="font-family:var(--font-display);font-size:16px;font-weight:700">Gerenciar usuários</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">Controle de acesso e perfis</div>
           </div>
-          <button class="btn btn-primary" onclick="switchTab('register');goLayer('login')">+ Criar usuário</button>
+          <button class="btn btn-primary" onclick="openModal('criar-usuario')">+ Criar usuário</button>
         </div>
         <div id="usuarios-list"></div>
       </div>
 
       <!-- INVESTIDORES -->
-      <div class="page" id="page-investidores">
-        <!-- conteúdo muda por perfil — renderizado em JS -->
-      </div>
+      <div class="page" id="page-investidores"></div>
 
       <!-- ACCESS DENIED -->
       <div class="page" id="page-denied">
@@ -552,61 +353,35 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
   </main>
 </div>
 
-<!-- MODAL PERFIL CLIENTE -->
-<div class="modal-overlay" id="m-perfil-cliente">
-  <div class="modal" style="max-width:620px;width:90vw">
-    <div class="modal-header">
-      <div class="modal-title" id="perfil-cli-titulo">Perfil do Cliente</div>
-      <button class="modal-close" onclick="closeModal('perfil-cliente')">✕</button>
-    </div>
-    <div id="perfil-cli-body" style="padding:0 0 16px"></div>
-  </div>
-</div>
-
-<!-- ══ MODAIS ══ -->
-<div class="modal-overlay" id="m-veiculo">
+<!-- MODAL CRIAR USUÁRIO (só admin dentro do sistema) -->
+<div class="modal-overlay" id="m-criar-usuario">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="mv-title">Cadastrar Veículo</div><button class="modal-close" onclick="closeModal('veiculo')">✕</button></div>
+    <div class="modal-header"><div class="modal-title">Criar Usuário</div><button class="modal-close" onclick="closeModal('criar-usuario')">✕</button></div>
     <div class="form-grid">
-      <div class="form-group"><label>Tipo</label><select id="mv-tipo" style="width:100%"><option value="carro">🚗 Carro</option><option value="moto">🏍️ Moto</option></select></div>
-      <div class="form-group"><label>Marca</label><input type="text" id="mv-marca" placeholder="Honda" style="width:100%"></div>
-      <div class="form-group"><label>Modelo</label><input type="text" id="mv-modelo" placeholder="Civic" style="width:100%"></div>
-      <div class="form-group"><label>Placa</label><input type="text" id="mv-placa" placeholder="ABC-1234" style="width:100%"></div>
-      <div class="form-group"><label>Ano</label><input type="number" id="mv-ano" placeholder="2023" style="width:100%"></div>
-      <div class="form-group"><label>Cor</label><input type="text" id="mv-cor" placeholder="Prata" style="width:100%"></div>
-      <div class="form-group"><label>Câmbio</label><select id="mv-cambio" style="width:100%"><option value="Automatico">Automático</option><option value="Manual">Manual</option></select></div>
-      <div class="form-group"><label>Km atual</label><input type="number" id="mv-km" placeholder="0" style="width:100%"></div>
-      <div class="form-group full"><label>Diária (R$)</label><input type="number" id="mv-diaria" placeholder="150" style="width:100%"></div>
-      <div class="form-group full"><label>Observações</label><textarea id="mv-obs" rows="2" style="width:100%;resize:none"></textarea></div>
+      <div class="form-group full"><label>Nome completo</label><input type="text" id="r-nome" placeholder="Nome do usuário" style="width:100%"></div>
+      <div class="form-group full"><label>Email</label><input type="email" id="r-email" placeholder="email@exemplo.com" style="width:100%"></div>
+      <div class="form-group"><label>Senha</label><input type="password" id="r-senha" placeholder="Mínimo 6 caracteres" style="width:100%"></div>
+      <div class="form-group"><label>Perfil</label>
+        <select id="r-perfil" style="width:100%">
+          <option value="atendente">🧑‍💼 Atendente</option>
+          <option value="admin">👑 Administrador</option>
+          <option value="investidor">📈 Investidor</option>
+        </select>
+      </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('veiculo')">Cancelar</button><button class="btn btn-primary" onclick="salvarVeiculo()">✓ Salvar</button></div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="m-cliente">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">Cadastrar Cliente</div><button class="modal-close" onclick="closeModal('cliente')">✕</button></div>
-    <div class="form-grid">
-      <div class="form-group full"><label>Nome completo</label><input type="text" id="mc-nome" placeholder="Ana Lima" style="width:100%"></div>
-      <div class="form-group"><label>CPF</label><input type="text" id="mc-cpf" placeholder="123.456.789-00" style="width:100%"></div>
-      <div class="form-group"><label>Telefone</label><input type="text" id="mc-tel" placeholder="(21) 99999-0000" style="width:100%"></div>
-      <div class="form-group full"><label>Email</label><input type="email" id="mc-email" placeholder="email@exemplo.com" style="width:100%"></div>
-      <div class="form-group"><label>Nº CNH</label><input type="text" id="mc-cnh" placeholder="AB123456" style="width:100%"></div>
-      <div class="form-group"><label>Validade CNH</label><input type="date" id="mc-cnh-val" style="width:100%"></div>
-      <div class="form-group full"><label>Endereço</label><input type="text" id="mc-end" placeholder="Rua, número, bairro, cidade" style="width:100%"></div>
-      <div class="form-group full"><label>Observações</label><textarea id="mc-obs" rows="2" style="width:100%;resize:none"></textarea></div>
+    <div class="login-err" id="register-err" style="margin:8px 0"></div>
+    <div class="login-ok"  id="register-ok" style="margin:8px 0"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('criar-usuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="criarUsuarioAdmin()">✓ Criar usuário</button>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('cliente')">Cancelar</button><button class="btn btn-primary" onclick="salvarCliente()">✓ Salvar</button></div>
   </div>
 </div>
 
 <!-- MODAL PERFIL CLIENTE -->
 <div class="modal-overlay" id="m-perfil-cliente">
   <div class="modal" style="max-width:500px">
-    <div class="modal-header">
-      <div class="modal-title">Perfil do Cliente</div>
-      <button class="modal-close" onclick="closeModal('perfil-cliente')">✕</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">Perfil do Cliente</div><button class="modal-close" onclick="closeModal('perfil-cliente')">✕</button></div>
     <div id="perfil-cliente-body" style="max-height:70vh;overflow-y:auto;padding:4px"></div>
   </div>
 </div>
@@ -630,6 +405,45 @@ insert into clientes (nome,cpf,email,telefone,cnh,cnh_validade) values
   </div>
 </div>
 
+<!-- MODAL CADASTRAR VEÍCULO -->
+<div class="modal-overlay" id="m-veiculo">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="mv-title">Cadastrar Veículo</div><button class="modal-close" onclick="closeModal('veiculo')">✕</button></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Tipo</label><select id="mv-tipo" style="width:100%"><option value="carro">🚗 Carro</option><option value="moto">🏍️ Moto</option></select></div>
+      <div class="form-group"><label>Marca</label><input type="text" id="mv-marca" placeholder="Honda" style="width:100%"></div>
+      <div class="form-group"><label>Modelo</label><input type="text" id="mv-modelo" placeholder="Civic" style="width:100%"></div>
+      <div class="form-group"><label>Placa</label><input type="text" id="mv-placa" placeholder="ABC-1234" style="width:100%"></div>
+      <div class="form-group"><label>Ano</label><input type="number" id="mv-ano" placeholder="2023" style="width:100%"></div>
+      <div class="form-group"><label>Cor</label><input type="text" id="mv-cor" placeholder="Prata" style="width:100%"></div>
+      <div class="form-group"><label>Câmbio</label><select id="mv-cambio" style="width:100%"><option value="Automatico">Automático</option><option value="Manual">Manual</option></select></div>
+      <div class="form-group"><label>Km atual</label><input type="number" id="mv-km" placeholder="0" style="width:100%"></div>
+      <div class="form-group full"><label>Diária (R$)</label><input type="number" id="mv-diaria" placeholder="150" style="width:100%"></div>
+      <div class="form-group full"><label>Observações</label><textarea id="mv-obs" rows="2" style="width:100%;resize:none"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('veiculo')">Cancelar</button><button class="btn btn-primary" onclick="salvarVeiculo()">✓ Salvar</button></div>
+  </div>
+</div>
+
+<!-- MODAL CADASTRAR CLIENTE -->
+<div class="modal-overlay" id="m-cliente">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Cadastrar Cliente</div><button class="modal-close" onclick="closeModal('cliente')">✕</button></div>
+    <div class="form-grid">
+      <div class="form-group full"><label>Nome completo</label><input type="text" id="mc-nome" placeholder="Ana Lima" style="width:100%"></div>
+      <div class="form-group"><label>CPF</label><input type="text" id="mc-cpf" placeholder="123.456.789-00" style="width:100%"></div>
+      <div class="form-group"><label>Telefone</label><input type="text" id="mc-tel" placeholder="(21) 99999-0000" style="width:100%"></div>
+      <div class="form-group full"><label>Email</label><input type="email" id="mc-email" placeholder="email@exemplo.com" style="width:100%"></div>
+      <div class="form-group"><label>Nº CNH</label><input type="text" id="mc-cnh" placeholder="AB123456" style="width:100%"></div>
+      <div class="form-group"><label>Validade CNH</label><input type="date" id="mc-cnh-val" style="width:100%"></div>
+      <div class="form-group full"><label>Endereço</label><input type="text" id="mc-end" placeholder="Rua, número, bairro, cidade" style="width:100%"></div>
+      <div class="form-group full"><label>Observações</label><textarea id="mc-obs" rows="2" style="width:100%;resize:none"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('cliente')">Cancelar</button><button class="btn btn-primary" onclick="salvarCliente()">✓ Salvar</button></div>
+  </div>
+</div>
+
+<!-- MODAL MANUTENÇÃO -->
 <div class="modal-overlay" id="m-manutencao">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Registrar Manutenção</div><button class="modal-close" onclick="closeModal('manutencao')">✕</button></div>
