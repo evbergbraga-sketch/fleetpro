@@ -177,10 +177,12 @@ async function carregarMsgsDB(clienteId){
 
 async function salvarMsgDB(clienteId, numero, texto, tipo, direcao, mediaUrl){
   if(!sb) return;
-  await sb.from('wpp_mensagens').insert({
-    cliente_id:clienteId||null, numero, texto, tipo, direcao,
-    media_url:mediaUrl||null, created_at:new Date().toISOString()
-  }).catch(e=>console.warn('salvarMsgDB:',e.message));
+  try{
+    await sb.from('wpp_mensagens').insert({
+      cliente_id:clienteId||null, numero, texto, tipo, direcao,
+      media_url:mediaUrl||null, created_at:new Date().toISOString()
+    });
+  }catch(e){ console.warn('salvarMsgDB:', e.message); }
 }
 
 // ── ENVIO TEXTO ──
@@ -375,7 +377,9 @@ function enviarArquivo(input, tipo){
 function cancelarMidia(){
   _mediaFile = null; _mediaType = '';
   const prev = document.getElementById('media-preview');
-  if(prev) prev.style.display = 'none';
+  if(prev){ prev.style.display = 'none'; prev.style.cssText = 'display:none'; }
+  const txt = document.getElementById('media-preview-txt');
+  if(txt) txt.textContent = '';
 }
 
 async function _enviarMidiaWpp(c){
@@ -385,45 +389,80 @@ async function _enviarMidiaWpp(c){
   const cfg = JSON.parse(localStorage.getItem(EVO_CFG_KEY)||'{}');
   if(!cfg.apiUrl||!cfg.apiKey){ notify('Evolution API não configurada','error'); return; }
 
+  const fileName = _mediaFile.name;
+  const tipo     = _mediaType;
+  const fileRef  = _mediaFile;
+
   notify('Enviando...','success');
 
-  const reader = new FileReader();
-  reader.onload = async(ev)=>{
-    try{
-      const base64   = ev.target.result.split(',')[1];
-      const num      = fmtPhone(telefone);
-      const fileName = _mediaFile.name;
-      const tipo     = _mediaType;
-      let endpoint = '', body = {};
-
-      if(tipo==='image'){
-        endpoint = 'sendMedia';
-        body = {number:num, mediatype:'image', media:base64, caption:''};
-      } else if(tipo==='audio'){
-        endpoint = 'sendWhatsAppAudio';
-        body = {number:num, audio:base64, encoding:true};
-      } else {
-        endpoint = 'sendMedia';
-        body = {number:num, mediatype:'document', media:base64, fileName, caption:''};
-      }
-
-      const r = await fetch(cfg.apiUrl+'/message/'+endpoint+'/'+cfg.instancia,{
-        method:'POST',
-        headers:{'apikey':cfg.apiKey,'Content-Type':'application/json'},
-        body: JSON.stringify(body)
-      });
-      if(!r.ok){ const t=await r.text(); throw new Error(t); }
-
-      // Mostra no chat imediatamente
-      adicionarMsgLocal(activeChatId, fileName||'Arquivo', tipo, null);
-      await salvarMsgDB(c?.id||null, telefone, fileName||'Arquivo', tipo, 'saida', null);
-      cancelarMidia();
-      notify('Arquivo enviado ✓','success');
-    }catch(err){
-      notify('Erro: '+err.message,'error');
+  try{
+    let base64 = '';
+    if(tipo==='image'){
+      base64 = await _comprimirImagem(fileRef, 800);
+    } else {
+      base64 = await _lerBase64(fileRef);
     }
-  };
-  reader.readAsDataURL(_mediaFile);
+
+    const num = fmtPhone(telefone);
+    let endpoint = '', body = {};
+
+    if(tipo==='image'){
+      endpoint = 'sendMedia';
+      body = {number:num, mediatype:'image', media:base64, caption:''};
+    } else if(tipo==='audio'){
+      endpoint = 'sendWhatsAppAudio';
+      body = {number:num, audio:base64, encoding:true};
+    } else {
+      endpoint = 'sendMedia';
+      body = {number:num, mediatype:'document', media:base64, fileName, caption:''};
+    }
+
+    const r = await fetch(cfg.apiUrl+'/message/'+endpoint+'/'+cfg.instancia,{
+      method:'POST',
+      headers:{'apikey':cfg.apiKey,'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(!r.ok){
+      const t = await r.text();
+      let msg = t;
+      try{ msg = JSON.parse(t)?.message||t; }catch(_){}
+      throw new Error(msg);
+    }
+
+    adicionarMsgLocal(activeChatId, fileName||'Arquivo', tipo, null);
+    await salvarMsgDB(c?.id||null, telefone, fileName||'Arquivo', tipo, 'saida', null);
+    cancelarMidia();
+    notify('Arquivo enviado ✓','success');
+  }catch(err){
+    notify('Erro: '+err.message,'error');
+  }
+}
+
+function _lerBase64(file){
+  return new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload  = e => res(e.target.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function _comprimirImagem(file, maxWidth=800){
+  return new Promise((res,rej)=>{
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidth/img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      res(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
+    };
+    img.onerror = rej;
+    img.src = url;
+  });
 }
 
 // ── GRAVAÇÃO DE ÁUDIO ──
@@ -435,19 +474,26 @@ async function toggleGravarAudio(){
     try{
       const stream = await navigator.mediaDevices.getUserMedia({audio:true});
       audioChunks = [];
-      mediaRecorder = new MediaRecorder(stream);
+      // Detecta formato suportado pelo browser
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : '';
+      mediaRecorder = new MediaRecorder(stream, mimeType ? {mimeType} : {});
       mediaRecorder.ondataavailable = e=>{ if(e.data.size>0) audioChunks.push(e.data); };
       mediaRecorder.onstop = async()=>{
-        const blob = new Blob(audioChunks,{type:'audio/ogg;codecs=opus'});
-        _mediaFile = new File([blob],'audio.ogg',{type:'audio/ogg'});
+        const blob = new Blob(audioChunks, {type:'audio/webm'});
+        _mediaFile = new File([blob], 'audio_'+Date.now()+'.ogg', {type:'audio/ogg'});
         _mediaType = 'audio';
         stream.getTracks().forEach(t=>t.stop());
         const prev = document.getElementById('media-preview');
         const prevTxt = document.getElementById('media-preview-txt');
-        if(prev) prev.style.display = 'flex';
-        if(prevTxt) prevTxt.textContent = '🎙️ Áudio gravado ('+Math.round(blob.size/1024)+'KB) — clique Enviar';
+        if(prev){ prev.style.display = 'flex'; }
+        if(prevTxt) prevTxt.textContent = '🎙️ Áudio gravado ('+Math.round(blob.size/1024)+'KB) — clique Enviar para enviar';
         if(btn){ btn.textContent='🎙️'; btn.style.background='var(--bg3)'; btn.style.borderColor='var(--border2)'; }
         gravando = false;
+        notify('Áudio gravado! Clique Enviar.','success');
       };
       mediaRecorder.start();
       gravando = true;
