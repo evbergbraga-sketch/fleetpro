@@ -40,7 +40,12 @@ function renderVeiculos(){
 }
 
 // Preenche o select de investidores no modal de veículo
-function preencherSelectInvestidores(){
+async function preencherSelectInvestidores(){
+  // Garante que allPerfis está carregado
+  if(!allPerfis || allPerfis.length === 0){
+    const {data} = await sb.from('perfis').select('*').order('nome');
+    allPerfis = data||[];
+  }
   const sel = document.getElementById('mv-investidor');
   if(!sel) return;
   const investidores = allPerfis.filter(p=>p.perfil==='investidor');
@@ -81,7 +86,6 @@ async function salvarVeiculo(){
     await loadVeiculos();
     renderDashboard();
   }catch(e){
-    console.error('salvarVeiculo erro:', e);
     notify('Erro ao salvar: '+e.message,'error');
   }finally{
     if(btn){btn.disabled=false;btn.textContent='✓ Salvar';}
