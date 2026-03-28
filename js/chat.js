@@ -148,9 +148,11 @@ async function carregarMsgsDB(clienteId){
   if(!sb) return [];
   const isNumero = clienteId && !clienteId.includes('-');
   if(isNumero){
-    const numLimpo = clienteId.replace(/\D/g,'').slice(-11);
+    const numLimpo = clienteId.replace(/\D/g,'');
+    const num11 = numLimpo.slice(-11);
+    const num13 = numLimpo.length >= 13 ? numLimpo.slice(-13) : num11;
     const {data} = await sb.from('wpp_mensagens')
-      .select('*').ilike('numero','%'+numLimpo)
+      .select('*').or(`numero.ilike.%${num11},numero.ilike.%${num13}`)
       .order('created_at',{ascending:true}).limit(200);
     return data||[];
   }
