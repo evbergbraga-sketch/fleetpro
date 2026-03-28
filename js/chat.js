@@ -305,12 +305,7 @@ function abrirChat(cid){
     document.getElementById('chat-av').style.color = 'var(--muted)';
     document.getElementById('chat-name').textContent = 'Desconhecido';
     document.getElementById('chat-info').textContent = cid+' · Clique em Perfil para cadastrar';
-    const area = document.getElementById('chat-msgs');
-    const msgs = chatMsgs[cid]||[];
-    area.innerHTML = msgs.length
-      ? msgs.map(renderMsgItem).join('')
-      : '<div data-placeholder style="text-align:center;font-size:12px;color:var(--muted2);padding:30px">Sem mensagens.</div>';
-    area.scrollTop = area.scrollHeight;
+    renderChatMsgs(cid);
     renderChatContacts();
     return;
   }
