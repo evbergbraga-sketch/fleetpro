@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563EB'/><rect x='28' y='28' width='16' height='44' rx='5' fill='white'/><rect x='28' y='28' width='44' height='16' rx='5' fill='white'/><rect x='28' y='46' width='34' height='12' rx='5' fill='white'/><rect x='32' y='40' width='44' height='7' rx='3' fill='%234A7C59'/><rect x='32' y='50' width='36' height='7' rx='3' fill='rgba(255,255,255,0.3)'/></svg>">
 <title>FleetPro — Sistema de Locadora</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
 <!-- LAYER 1 — SETUP -->
 <div id="layer-setup" class="layer active">
   <div class="setup-box">
-    <div class="setup-logo">⬡ FleetPro</div>
+    <div class="setup-logo" style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><div style="width:36px;height:36px;background:#2563EB;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" viewBox="0 0 16 16" fill="none"><rect x="3" y="3" width="2.5" height="10" rx="1" fill="white"/><rect x="3" y="3" width="8" height="2.5" rx="1" fill="white"/><rect x="3" y="7.5" width="6" height="2" rx="1" fill="white"/><rect x="4" y="6" width="9" height="1.5" rx="0.75" fill="#4A7C59"/><rect x="4" y="8" width="7" height="1.5" rx="0.75" fill="rgba(255,255,255,0.4)"/></svg></div><span>Fleet<span style="color:#2563EB">Pro</span></span></div>
     <div class="setup-sub">Configure o Supabase para começar</div>
     <div class="setup-step"><div class="step-num">1</div><div class="step-text">Acesse <strong>supabase.com</strong> → crie um projeto → vá em <strong>Project Settings → API</strong> e copie a <strong>Project URL</strong> e a chave <strong>anon public</strong>.</div></div>
     <div class="setup-step"><div class="step-num">2</div><div class="step-text">No painel, vá em <strong>SQL Editor</strong> → cole e execute o SQL abaixo para criar todas as tabelas incluindo autenticação.</div></div>
@@ -69,8 +69,8 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
   <div class="login-wrap">
     <div class="login-left">
       <div>
-        <div class="login-brand">⬡ FleetPro</div>
-        <div class="login-tagline">Sistema completo para locadoras</div>
+        <div class="login-brand" style="display:flex;align-items:center;gap:10px"><div style="width:40px;height:40px;background:#2563EB;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="22" height="22" viewBox="0 0 16 16" fill="none"><rect x="3" y="3" width="2.5" height="10" rx="1" fill="white"/><rect x="3" y="3" width="8" height="2.5" rx="1" fill="white"/><rect x="3" y="7.5" width="6" height="2" rx="1" fill="white"/><rect x="4" y="6" width="9" height="1.5" rx="0.75" fill="#4A7C59"/><rect x="4" y="8" width="7" height="1.5" rx="0.75" fill="rgba(255,255,255,0.4)"/></svg></div><span>Fleet<span style="color:#2563EB">Pro</span></span></div>
+        <div class="login-tagline">Plataforma de locadoras</div>
       </div>
       <div class="login-features">
         <div class="login-feat"><div class="feat-icon" style="background:rgba(59,130,246,.15)">🚗</div><div class="feat-label">Gestão de carros e motos em tempo real</div></div>
@@ -101,7 +101,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
 <!-- LAYER 3 — APP -->
 <div id="layer-app" class="layer">
   <aside class="sidebar">
-    <div class="logo"><div class="logo-mark">⬡ FleetPro</div><div class="logo-sub">Sistema de Locadora</div></div>
+    <div class="logo"><div class="logo-mark" style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;background:#2563EB;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="3" width="2.5" height="10" rx="1" fill="white"/><rect x="3" y="3" width="8" height="2.5" rx="1" fill="white"/><rect x="3" y="7.5" width="6" height="2" rx="1" fill="white"/><rect x="4" y="6" width="9" height="1.5" rx="0.75" fill="#4A7C59"/><rect x="4" y="8" width="7" height="1.5" rx="0.75" fill="rgba(255,255,255,0.4)"/></svg></div><span>Fleet<span style="color:#2563EB">Pro</span></span></div><div class="logo-sub">Plataforma de locadoras</div></div>
     <nav id="sidebar-nav"></nav>
     <div class="sidebar-footer">
       <div class="user-pill">
