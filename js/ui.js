@@ -12,6 +12,8 @@ function openModal(type, subtipo){
     document.getElementById('mv-title').textContent = subtipo==='moto' ? 'Cadastrar Moto' : 'Cadastrar Carro';
     if(subtipo) document.getElementById('mv-tipo').value = subtipo;
     document.getElementById('m-veiculo').classList.add('show');
+    // Preenche investidores ao abrir o modal
+    preencherSelectInvestidores();
 
   } else if(type==='cliente'){
     document.getElementById('m-cliente').classList.add('show');
@@ -22,7 +24,6 @@ function openModal(type, subtipo){
     document.getElementById('m-manutencao').classList.add('show');
 
   } else if(type==='criar-usuario'){
-    // Limpa campos antes de abrir
     ['r-nome','r-email','r-senha'].forEach(id=>{
       const el = document.getElementById(id); if(el) el.value='';
     });
