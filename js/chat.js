@@ -599,16 +599,22 @@ async function renderUsuarios(){
   document.getElementById('usuarios-list').innerHTML = allPerfis.map(u=>{
     const isMe = u.id===currentUser?.id;
     const rBadge = u.perfil==='admin'?'badge-yellow':u.perfil==='atendente'?'badge-blue':'badge-purple';
+    const ini = (u.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     return `<div class="user-card">
-      <div class="cavatar" style="width:42px;height:42px;font-size:14px;background:rgba(245,166,35,.12);color:var(--accent)">${(u.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>
-      <div class="uc-info"><div class="uc-name">${u.nome}${isMe?' <span style="font-size:10px;color:var(--muted)">(você)</span>':''}</div><div class="uc-email">${u.email}</div></div>
-      <div class="uc-actions">
-        <span class="badge ${rBadge}">${ROLE_LABELS[u.perfil]}</span>
-        ${!isMe?`<select onchange="alterarPerfil('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:6px;cursor:pointer">
-          <option value="atendente" ${u.perfil==='atendente'?'selected':''}>Atendente</option>
-          <option value="admin" ${u.perfil==='admin'?'selected':''}>Admin</option>
-          <option value="investidor" ${u.perfil==='investidor'?'selected':''}>Investidor</option>
-        </select>`:'<span style="font-size:11px;color:var(--muted2)">seu perfil</span>'}
+      <div class="cavatar" style="width:42px;height:42px;font-size:14px;background:rgba(245,166,35,.12);color:var(--accent)">${ini}</div>
+      <div class="uc-info">
+        <div class="uc-name">${u.nome}${isMe?' <span style="font-size:10px;color:var(--muted)">(você)</span>':''}</div>
+        <div class="uc-email">${u.email}</div>
+      </div>
+      <div class="uc-actions" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        ${!isMe?`
+          <select onchange="alterarPerfil('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:6px;cursor:pointer">
+            <option value="atendente" ${u.perfil==='atendente'?'selected':''}>🧑‍💼 Atendente</option>
+            <option value="admin" ${u.perfil==='admin'?'selected':''}>👑 Admin</option>
+            <option value="investidor" ${u.perfil==='investidor'?'selected':''}>📈 Investidor</option>
+          </select>
+          <button onclick="excluirUsuario('${u.id}','${u.nome.replace(/'/g,"\\'")}','${u.email}')" style="font-size:11px;padding:5px 10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:6px;cursor:pointer">🗑️ Excluir</button>
+        `:`<span class="badge ${rBadge}">${ROLE_LABELS[u.perfil]}</span><span style="font-size:11px;color:var(--muted2)">seu perfil</span>`}
       </div>
     </div>`;
   }).join('')||'<p style="color:var(--muted2)">Nenhum usuário encontrado.</p>';
@@ -618,6 +624,21 @@ async function alterarPerfil(uid, novoPerfil){
   const {error} = await sb.from('perfis').update({perfil:novoPerfil}).eq('id',uid);
   if(error){notify('Erro: '+error.message,'error');return;}
   notify('Perfil atualizado!','success'); renderUsuarios();
+}
+
+async function excluirUsuario(uid, nome, email){
+  if(!confirm(`Excluir o usuário "${nome}" (${email})?
+
+Essa ação não pode ser desfeita.`)) return;
+  try{
+    // Remove da tabela perfis
+    const {error} = await sb.from('perfis').delete().eq('id',uid);
+    if(error) throw error;
+    notify(`Usuário ${nome} removido do sistema.`,'success');
+    renderUsuarios();
+  }catch(e){
+    notify('Erro ao excluir: '+e.message,'error');
+  }
 }
 
 // ══ INVESTIDORES ══
