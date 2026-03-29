@@ -4,7 +4,13 @@ window.addEventListener('DOMContentLoaded', async()=>{
   const key = localStorage.getItem('fp_key');
   if(!url||!key){ goLayer('setup'); return; }
 
-  sb = createClient(url, key);
+  sb = createClient(url, key, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false
+    }
+  });
   try{
     const {data:{session}, error} = await sb.auth.getSession();
     if(error) throw error;
