@@ -6,53 +6,6 @@ let wppOk = false;
 let sseSource = null;
 const EVO_CFG_KEY = 'fp_evo_cfg';
 
-
-// ══ CACHE LOCAL DE MENSAGENS (IndexedDB) ══
-const DB_NAME = 'fleetpro_chat';
-const DB_VERSION = 1;
-let idb = null;
-
-function abrirIDB(){
-  return new Promise((resolve, reject)=>{
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e=>{
-      const db = e.target.result;
-      if(!db.objectStoreNames.contains('mensagens')){
-        const store = db.createObjectStore('mensagens', {keyPath:'id'});
-        store.createIndex('cliente_id', 'cliente_id', {unique:false});
-        store.createIndex('numero', 'numero', {unique:false});
-      }
-    };
-    req.onsuccess = e=>{ idb = e.target.result; resolve(idb); };
-    req.onerror = ()=>resolve(null);
-  });
-}
-
-async function salvarMsgsIDB(msgs){
-  if(!idb) await abrirIDB();
-  if(!idb || !msgs?.length) return;
-  const tx = idb.transaction('mensagens', 'readwrite');
-  const store = tx.objectStore('mensagens');
-  msgs.forEach(m=>{ if(m.id) store.put(m); });
-}
-
-async function buscarMsgsIDB(clienteId){
-  if(!idb) await abrirIDB();
-  if(!idb) return [];
-  return new Promise(resolve=>{
-    const tx = idb.transaction('mensagens', 'readonly');
-    const store = tx.objectStore('mensagens');
-    const isNumero = clienteId && !clienteId.includes('-');
-    const index = store.index(isNumero ? 'numero' : 'cliente_id');
-    const req = index.getAll(clienteId);
-    req.onsuccess = ()=>resolve((req.result||[]).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)));
-    req.onerror = ()=>resolve([]);
-  });
-}
-
-// Inicializa IDB ao carregar
-abrirIDB();
-
 function fmtPhone(tel){
   if(!tel) return '';
   let n = tel.replace(/\D/g,'');
@@ -111,8 +64,6 @@ function receberMsgSSE(msg){
     const jatem = chatMsgs[k].some(m=>m.created_at===msgObj.created_at && m.texto===msgObj.texto);
     if(!jatem) chatMsgs[k].push(msgObj);
   });
-  // Persiste no IDB para sobreviver a mudanças de aba
-  if(msgObj.id) salvarMsgsIDB([msgObj]);
 
   const estaAberta = activeChatId && [cid, cidPorId, cidPorNumero, msg.numero]
     .filter(Boolean).includes(activeChatId);
@@ -288,41 +239,36 @@ function renderMsgItem(m){
 async function renderChatMsgs(cid){
   const area = document.getElementById('chat-msgs');
   if(!area) return;
-
-  // PASSO 1: Mostra memória imediatamente (sem esperar nada)
   const memMsgs = chatMsgs[cid]||[];
+  // Mostra memória imediatamente se tiver
   if(memMsgs.length){
     area.innerHTML = memMsgs.map(renderMsgItem).join('');
     area.scrollTop = area.scrollHeight;
-  } else {
-    // PASSO 2: Tenta IndexedDB (instantâneo, sem rede)
-    const idbMsgs = await buscarMsgsIDB(cid);
-    if(idbMsgs.length){
-      area.innerHTML = idbMsgs.map(renderMsgItem).join('');
-      area.scrollTop = area.scrollHeight;
-      // Atualiza memória com IDB
-      chatMsgs[cid] = idbMsgs;
-    } else {
-      area.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--muted2);padding:20px">⏳ Carregando...</div>';
-    }
   }
-
-  // PASSO 3: Sincroniza com Supabase em background
+  // Busca banco SEMPRE — sem mostrar "Carregando" se já tem msgs na memória
+  if(!memMsgs.length){
+    area.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--muted2);padding:20px">⏳ Buscando mensagens...</div>';
+  }
   try{
     const dbMsgs = await carregarMsgsDB(cid);
+    // Atualiza chatMsgs com dados do banco para próximas visitas
     if(dbMsgs.length > 0){
-      // Salva no IDB para próxima vez (mesmo offline)
-      salvarMsgsIDB(dbMsgs);
-      // Atualiza memória
-      chatMsgs[cid] = dbMsgs;
+      if(!chatMsgs[cid]) chatMsgs[cid] = [];
+      dbMsgs.forEach(m=>{
+        const jatem = chatMsgs[cid].some(x=>x.id===m.id||(x.created_at===m.created_at&&x.texto===m.texto));
+        if(!jatem) chatMsgs[cid].push(m);
+      });
     }
-    const todas = dbMsgs.length > 0 ? dbMsgs : (chatMsgs[cid]||[]);
+    const visto = new Set(dbMsgs.map(m=>m.created_at+'|'+(m.texto||'')));
+    const extras = memMsgs.filter(m=>!visto.has((m.created_at||'')+'|'+(m.texto||m.text||'')));
+    const todas = [...dbMsgs,...extras].sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
     area.innerHTML = todas.length
       ? todas.map(renderMsgItem).join('')
       : '<div data-placeholder style="text-align:center;font-size:12px;color:var(--muted2);padding:30px">Sem mensagens ainda.</div>';
   }catch(e){
-    console.error('renderChatMsgs erro:', e.message);
-    // Mantém o que já estava mostrando (IDB ou memória)
+    console.error('renderChatMsgs erro:', e);
+    if(!memMsgs.length)
+      area.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--muted2);padding:30px">Sem mensagens ainda.</div>';
   }
   area.scrollTop = area.scrollHeight;
 }
@@ -852,19 +798,11 @@ function calcOcupacao(){
 
 // Reconexão ao voltar para a aba
 document.addEventListener('visibilitychange', ()=>{
-  if(document.visibilityState !== 'visible') return;
-  // Reconecta SSE se necessário
-  const cfg = JSON.parse(localStorage.getItem(EVO_CFG_KEY)||'{}');
-  if(cfg.bridgeUrl && (!sseSource || sseSource.readyState === 2)){
-    conectarSSE(cfg.bridgeUrl, cfg.secret||'FleetPro2025');
+  if(document.visibilityState !== 'visible'){
+    // Salva qual chat estava aberto antes de sair
+    if(activeChatId) sessionStorage.setItem('fp_last_chat', activeChatId);
+    return;
   }
-  // Recarrega chat ativo do banco (sem depender de chatMsgs em memória)
-  if(activeChatId){
-    const area = document.getElementById('chat-msgs');
-    if(area){
-      const _cid = activeChatId;
-      activeChatId = null;
-      abrirChat(_cid);
-    }
-  }
+  // Ao voltar: recarrega a página para garantir dados frescos
+  window.location.reload();
 });
