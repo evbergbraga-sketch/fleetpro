@@ -4,6 +4,9 @@ window.addEventListener('DOMContentLoaded', async()=>{
   const key = localStorage.getItem('fp_key');
   if(!url||!key){ goLayer('setup'); return; }
 
+  // Mostra app com loading imediatamente — sem piscar tela de setup
+  goLayer('app');
+
   sb = createClient(url, key);
   try{
     const {data:{session}, error} = await sb.auth.getSession();
