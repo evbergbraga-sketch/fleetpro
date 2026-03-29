@@ -87,7 +87,8 @@ function renderDashboard(){
   const meusLocs = isInv
     ? allLocacoes.filter(l=>meusLocIds.has(l.veiculo_id))
     : allLocacoes;
-  document.getElementById('st-locacoes').textContent=meusLocs.length;
+  const locAtivas = meusLocs.filter(l=>l.status==='ativa'||!l.status);
+  document.getElementById('st-locacoes').textContent=locAtivas.length;
 
   const dl=document.getElementById('dash-loc');
   dl.innerHTML=meusLocs.length?meusLocs.map(l=>{
