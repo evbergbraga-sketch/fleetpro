@@ -77,12 +77,7 @@ function receberMsgSSE(msg){
     }
   }
 
-  // Garante allClientes carregado antes de re-renderizar lista
-  if(allClientes && allClientes.length > 0){
-    renderChatContacts();
-  } else {
-    loadClientes().then(()=>renderChatContacts()).catch(()=>{});
-  }
+  if(allClientes && allClientes.length > 0) renderChatContacts();
   const nome = msg.nomeCliente||msg.numero||'Desconhecido';
   const prev = msg.texto ? msg.texto.slice(0,40) : '(mídia)';
   notify('💬 '+nome+': '+prev,'success');
@@ -245,14 +240,25 @@ async function renderChatMsgs(cid){
   const area = document.getElementById('chat-msgs');
   if(!area) return;
   const memMsgs = chatMsgs[cid]||[];
+  // Mostra memória imediatamente se tiver
   if(memMsgs.length){
     area.innerHTML = memMsgs.map(renderMsgItem).join('');
     area.scrollTop = area.scrollHeight;
-  } else {
-    area.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--muted2);padding:20px">⏳ Carregando...</div>';
+  }
+  // Busca banco SEMPRE — sem mostrar "Carregando" se já tem msgs na memória
+  if(!memMsgs.length){
+    area.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--muted2);padding:20px">⏳ Buscando mensagens...</div>';
   }
   try{
     const dbMsgs = await carregarMsgsDB(cid);
+    // Atualiza chatMsgs com dados do banco para próximas visitas
+    if(dbMsgs.length > 0){
+      if(!chatMsgs[cid]) chatMsgs[cid] = [];
+      dbMsgs.forEach(m=>{
+        const jatem = chatMsgs[cid].some(x=>x.id===m.id||(x.created_at===m.created_at&&x.texto===m.texto));
+        if(!jatem) chatMsgs[cid].push(m);
+      });
+    }
     const visto = new Set(dbMsgs.map(m=>m.created_at+'|'+(m.texto||'')));
     const extras = memMsgs.filter(m=>!visto.has((m.created_at||'')+'|'+(m.texto||m.text||'')));
     const todas = [...dbMsgs,...extras].sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
@@ -260,14 +266,14 @@ async function renderChatMsgs(cid){
       ? todas.map(renderMsgItem).join('')
       : '<div data-placeholder style="text-align:center;font-size:12px;color:var(--muted2);padding:30px">Sem mensagens ainda.</div>';
   }catch(e){
-    console.error('renderChatMsgs:', e);
-    area.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--muted2);padding:30px">Sem mensagens ainda.</div>';
+    console.error('renderChatMsgs erro:', e);
+    if(!memMsgs.length)
+      area.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--muted2);padding:30px">Sem mensagens ainda.</div>';
   }
   area.scrollTop = area.scrollHeight;
 }
 
 function renderChatContacts(){
-  // PROTEÇÃO: nunca renderiza com allClientes vazio — preserva lista atual
   if(!allClientes || allClientes.length === 0) return;
   const s = (document.getElementById('chat-search')?.value||'').toLowerCase();
   const numsCadastrados = new Set(allClientes.map(c=>(c.telefone||'').replace(/\D/g,'').slice(-11)));
@@ -790,19 +796,12 @@ function calcOcupacao(){
   return Math.round(allLocacoes.length/allVeiculos.length*100);
 }
 
-
-// ══ RECONEXÃO AO VOLTAR PARA A ABA ══
+// Reconexão ao voltar para a aba
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState !== 'visible') return;
   const cfg = JSON.parse(localStorage.getItem(EVO_CFG_KEY)||'{}');
   if(cfg.bridgeUrl && (!sseSource || sseSource.readyState === 2)){
     conectarSSE(cfg.bridgeUrl, cfg.secret||'FleetPro2025');
   }
-  const chatPage = document.getElementById('page-chat');
-  if(chatPage && chatPage.classList.contains('active') && activeChatId){
-    const area = document.getElementById('chat-msgs');
-    if(area && area.innerHTML.includes('Carregando')){
-      renderChatMsgs(activeChatId);
-    }
-  }
+  if(activeChatId) renderChatMsgs(activeChatId);
 });
