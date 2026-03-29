@@ -1,5 +1,6 @@
 // nav.js — Navegação, carregamento de dados e dashboard
 
+// ══ NAVIGATION ══
 const PAGE_CFG = {
   dashboard:   {title:'Dashboard',              action:'',                    modal:null, roles:['admin','atendente','investidor']},
   carros:      {title:'Estoque — Carros',        action:'+ Cadastrar Carro',   modal:'veiculo', roles:['admin','atendente']},
@@ -30,47 +31,26 @@ function goPage(id, navEl){
   btn.style.display=c.action?'':'none';
   btn.textContent=c.action;
   if(c.modal) btn.onclick=()=>openModal(c.modal, id==='motos'?'moto':id==='carros'?'carro':null);
-  // Recarrega dados ao trocar de aba
-  if(id==='carros'||id==='motos'){
-    loadVeiculos().then(()=>preencherSelectInvestidores());
-  }
-  if(id==='clientes'){
-    loadClientes();
-  }
-  if(id==='contratos'){
-    loadVeiculos();loadClientes();
-    setTimeout(()=>{previewContrato();populateContratosSelects();},300);
-  }
-  if(id==='calendario'){
-    loadLocacoes().then(()=>renderCal());
-  }
+  if(id==='contratos'){previewContrato();populateContratosSelects();}
+  if(id==='calendario'){renderCal();}
   if(id==='chat'){
     renderChatContacts();
     if(activeChatId){
-      // Reabre o chat do zero para garantir que carrega do banco
       const _cid = activeChatId;
       activeChatId = null;
       setTimeout(()=>abrirChat(_cid), 150);
     }
   }
   if(id==='usuarios'){renderUsuarios();}
-  if(id==='investidores'){
-    Promise.all([loadVeiculos(),loadLocacoes(),loadManutencoes()]).then(()=>renderInvestidores());
-  }
-  if(id==='historico'){
-    loadVeiculos().then(()=>renderHistVeiculosList());
-  }
-  if(id==='dashboard'){
-    carregarTudo();
-  }
+  if(id==='investidores'){renderInvestidores();}
+  if(id==='historico'){renderHistVeiculosList();}
+  if(id==='carros'||id==='motos'){preencherSelectInvestidores();}
 }
 
 // ══ DATA LOADING ══
 async function carregarTudo(){
   await Promise.all([loadVeiculos(),loadClientes(),loadLocacoes(),loadManutencoes(),loadPerfis()]);
   renderDashboard();
-  renderVeiculos();
-  renderClientes();
   if(sb){
     const {data} = await sb.from('wpp_mensagens')
       .select('numero').is('cliente_id',null)
@@ -80,75 +60,32 @@ async function carregarTudo(){
   }
 }
 
-async function loadVeiculos(){const {data}=await sb.from('veiculos').select('*').order('created_at',{ascending:false});if(data) allVeiculos=data;renderVeiculos();}
-async function loadClientes(){const {data}=await sb.from('clientes').select('*').order('nome');if(data) allClientes=data;renderClientes();}
+async function loadVeiculos(){const {data}=await sb.from('veiculos').select('*').order('created_at',{ascending:false});allVeiculos=data||[];renderVeiculos();}
+async function loadClientes(){const {data}=await sb.from('clientes').select('*').order('nome');allClientes=data||[];renderClientes();}
 async function loadLocacoes(){const {data}=await sb.from('locacoes').select('*,veiculos(*),clientes(*)').eq('status','ativa').order('data_fim',{ascending:false});if(data) allLocacoes=data;}
-async function loadManutencoes(){const {data}=await sb.from('manutencoes').select('*,veiculos(*)').order('created_at',{ascending:false});if(data) allManutencoes=data;}
-async function loadPerfis(){const {data}=await sb.from('perfis').select('*').order('nome');if(data) allPerfis=data;}
-
-// ══ BUSCA GLOBAL ══
-function initBuscaGlobal(){
-  const inp = document.getElementById('busca-global');
-  const res = document.getElementById('busca-resultados');
-  if(!inp||!res) return;
-  inp.addEventListener('input', ()=>{
-    const q = inp.value.trim().toLowerCase();
-    if(q.length < 2){ res.style.display='none'; return; }
-    const resultados = [];
-    allClientes.forEach(c=>{
-      if(c.nome.toLowerCase().includes(q)||c.telefone?.includes(q)||c.cpf?.includes(q))
-        resultados.push({tipo:'Cliente', label:c.nome, sub:c.telefone||c.cpf, action:()=>{ goPage('clientes'); setTimeout(()=>{ document.getElementById('s-clientes').value=c.nome; renderClientes(); },300); }});
-    });
-    allVeiculos.forEach(v=>{
-      if((v.marca+' '+v.modelo).toLowerCase().includes(q)||v.placa.toLowerCase().includes(q))
-        resultados.push({tipo:'Veículo', label:v.marca+' '+v.modelo, sub:v.placa, action:()=>{ goPage(v.tipo==='carro'?'carros':'motos'); }});
-    });
-    if(resultados.length === 0){ res.style.display='none'; return; }
-    res.innerHTML = resultados.slice(0,6).map((r,i)=>`
-      <div class="search-item" onclick="document.getElementById('busca-resultados').style.display='none';document.getElementById('busca-global').value='';(window._searchActions||[])[${i}]&&window._searchActions[${i}]()">
-        <div style="flex:1"><div style="font-size:13px;font-weight:500">${r.label}</div><div style="font-size:11px;color:var(--muted)">${r.sub||''}</div></div>
-        <span class="search-tag">${r.tipo}</span>
-      </div>`).join('');
-    window._searchActions = resultados.slice(0,6).map(r=>r.action);
-    res.style.display='block';
-  });
-  document.addEventListener('click', e=>{ if(!e.target.closest('#busca-wrapper')) res.style.display='none'; });
-}
+async function loadManutencoes(){const {data}=await sb.from('manutencoes').select('*,veiculos(*)').order('created_at',{ascending:false});allManutencoes=data||[];}
+async function loadPerfis(){const {data}=await sb.from('perfis').select('*').order('nome');allPerfis=data||[];}
 
 // ══ DASHBOARD ══
 function renderDashboard(){
   const isInv = currentPerfil?.perfil === 'investidor';
-  const meusVeiculos = isInv ? allVeiculos.filter(v=>v.investidor_id===currentUser?.id) : allVeiculos;
-  const meusLocIds = new Set(meusVeiculos.map(v=>v.id));
-  const meusLocs = isInv ? allLocacoes.filter(l=>meusLocIds.has(l.veiculo_id)) : allLocacoes;
+  const meusVeiculos = isInv
+    ? allVeiculos.filter(v=>v.investidor_id===currentUser?.id)
+    : allVeiculos;
 
   const carros=meusVeiculos.filter(v=>v.tipo==='carro');
   const motos=meusVeiculos.filter(v=>v.tipo==='moto');
-  const atrasados = meusLocs.filter(l=>Math.ceil((new Date(l.data_fim)-new Date())/86400000) < 0);
-
   document.getElementById('st-carros').textContent=carros.filter(v=>v.status==='disponivel').length;
   document.getElementById('st-carros-s').textContent=`de ${carros.length} total`;
   document.getElementById('st-motos').textContent=motos.filter(v=>v.status==='disponivel').length;
   document.getElementById('st-motos-s').textContent=`de ${motos.length} total`;
   document.getElementById('st-clientes').textContent=allClientes.length;
-  document.getElementById('st-locacoes').textContent=meusLocs.length;
 
-  // Card de alerta
-  const alertCard = document.getElementById('st-alert-card');
-  const alertVal  = document.getElementById('st-alert-val');
-  const alertSub  = document.getElementById('st-alert-sub');
-  if(alertCard && alertVal && alertSub){
-    alertVal.textContent = atrasados.length;
-    alertSub.textContent = atrasados.length === 0 ? 'Tudo em dia ✓' : `veículo${atrasados.length>1?'s':''} com devolução atrasada`;
-    alertCard.className = atrasados.length > 0 ? 'stat-card stat-alert' : 'stat-card';
-    if(atrasados.length === 0){
-      alertCard.style.setProperty('--accent-color','var(--green)');
-      alertVal.style.color = 'var(--green)';
-    } else {
-      alertCard.style.removeProperty('--accent-color');
-      alertVal.style.color = '';
-    }
-  }
+  const meusLocIds = new Set(meusVeiculos.map(v=>v.id));
+  const meusLocs = isInv
+    ? allLocacoes.filter(l=>meusLocIds.has(l.veiculo_id))
+    : allLocacoes;
+  document.getElementById('st-locacoes').textContent=meusLocs.length;
 
   const dl=document.getElementById('dash-loc');
   dl.innerHTML=meusLocs.length?meusLocs.map(l=>{
@@ -160,9 +97,10 @@ function renderDashboard(){
 
   const dm=document.getElementById('dash-man');
   const meusMantIds = new Set(meusVeiculos.map(v=>v.id));
-  const mativas = (isInv ? allManutencoes.filter(m=>meusMantIds.has(m.veiculo_id)) : allManutencoes).filter(m=>m.status!=='concluida');
+  const mativas = (isInv
+    ? allManutencoes.filter(m=>meusMantIds.has(m.veiculo_id))
+    : allManutencoes).filter(m=>m.status!=='concluida');
   dm.innerHTML=mativas.length?mativas.map(m=>`<tr><td><div style="font-weight:500">${m.veiculos?.modelo||'—'}</div><div style="font-size:11px;color:var(--muted)">${m.veiculos?.placa||''}</div></td><td>${m.tipo}</td><td><span class="badge ${m.status==='pendente'?'badge-yellow':'badge-blue'}">${m.status==='pendente'?'Pendente':'Em andamento'}</span></td></tr>`).join(''):'<tr class="empty-row"><td colspan="3">Nenhuma</td></tr>';
-
-  // Inicia busca global após carregar dados
-  initBuscaGlobal();
 }
+
+// ══ VEÍCULOS (render chamado de veiculos.js) ══
