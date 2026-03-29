@@ -46,7 +46,10 @@ function goPage(id, navEl){
   }
   if(id==='chat'){
     renderChatContacts();
-    if(activeChatId) renderChatMsgs(activeChatId);
+    if(activeChatId){
+      // Força recarregar mensagens sempre que volta para o chat
+      setTimeout(()=>renderChatMsgs(activeChatId), 100);
+    }
   }
   if(id==='usuarios'){renderUsuarios();}
   if(id==='investidores'){
