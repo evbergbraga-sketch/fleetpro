@@ -4,6 +4,9 @@ window.addEventListener('DOMContentLoaded', async()=>{
   const key = localStorage.getItem('fp_key');
   if(!url||!key){ goLayer('setup'); return; }
 
+  // Já tem config — mostra app direto, sem piscar tela de setup
+  goLayer('app');
+
   sb = createClient(url, key, {
     auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:false }
   });
@@ -20,7 +23,7 @@ window.addEventListener('DOMContentLoaded', async()=>{
         setTimeout(()=>{
           goPage('chat');
           setTimeout(()=>abrirChat(lastChat), 500);
-        }, 1000);
+        }, 800);
       }
     } else {
       goLayer('login');
