@@ -64,6 +64,8 @@ function goPage(id, navEl){
 async function carregarTudo(){
   await Promise.all([loadVeiculos(),loadClientes(),loadLocacoes(),loadManutencoes(),loadPerfis()]);
   renderDashboard();
+  renderVeiculos();
+  renderClientes();
   if(sb){
     const {data} = await sb.from('wpp_mensagens')
       .select('numero').is('cliente_id',null)
