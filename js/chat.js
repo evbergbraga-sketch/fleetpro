@@ -799,9 +799,18 @@ function calcOcupacao(){
 // Reconexão ao voltar para a aba
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState !== 'visible') return;
+  // Reconecta SSE se necessário
   const cfg = JSON.parse(localStorage.getItem(EVO_CFG_KEY)||'{}');
   if(cfg.bridgeUrl && (!sseSource || sseSource.readyState === 2)){
     conectarSSE(cfg.bridgeUrl, cfg.secret||'FleetPro2025');
   }
-  if(activeChatId) renderChatMsgs(activeChatId);
+  // Recarrega chat ativo do banco (sem depender de chatMsgs em memória)
+  if(activeChatId){
+    const area = document.getElementById('chat-msgs');
+    if(area){
+      const _cid = activeChatId;
+      activeChatId = null;
+      abrirChat(_cid);
+    }
+  }
 });
