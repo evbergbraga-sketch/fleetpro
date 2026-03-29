@@ -77,9 +77,12 @@ function receberMsgSSE(msg){
     }
   }
 
-  // Só re-renderiza contatos se allClientes já estiver carregado
-  if(allClientes && allClientes.length > 0) renderChatContacts();
-  else loadClientes().then(()=>renderChatContacts());
+  // Garante allClientes carregado antes de re-renderizar lista
+  if(allClientes && allClientes.length > 0){
+    renderChatContacts();
+  } else {
+    loadClientes().then(()=>renderChatContacts()).catch(()=>{});
+  }
   const nome = msg.nomeCliente||msg.numero||'Desconhecido';
   const prev = msg.texto ? msg.texto.slice(0,40) : '(mídia)';
   notify('💬 '+nome+': '+prev,'success');
@@ -248,13 +251,6 @@ async function renderChatMsgs(cid){
   } else {
     area.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--muted2);padding:20px">⏳ Carregando...</div>';
   }
-  // Timeout de segurança — se travar em carregando por +5s, limpa
-  const _safeCid = cid;
-  setTimeout(()=>{
-    if(activeChatId===_safeCid && area.innerHTML.includes('Carregando')){
-      area.innerHTML='<div data-placeholder style="text-align:center;font-size:12px;color:var(--muted2);padding:30px">Sem mensagens ainda.</div>';
-    }
-  }, 5000);
   try{
     const dbMsgs = await carregarMsgsDB(cid);
     const visto = new Set(dbMsgs.map(m=>m.created_at+'|'+(m.texto||'')));
@@ -270,11 +266,9 @@ async function renderChatMsgs(cid){
   area.scrollTop = area.scrollHeight;
 }
 
-async function renderChatContacts(){
-  // Garante que clientes estão carregados antes de renderizar
-  if(!allClientes || allClientes.length === 0){
-    try{ await loadClientes(); }catch(e){}
-  }
+function renderChatContacts(){
+  // PROTEÇÃO: nunca renderiza com allClientes vazio — preserva lista atual
+  if(!allClientes || allClientes.length === 0) return;
   const s = (document.getElementById('chat-search')?.value||'').toLowerCase();
   const numsCadastrados = new Set(allClientes.map(c=>(c.telefone||'').replace(/\D/g,'').slice(-11)));
   const desconhecidosMap = {};
@@ -611,16 +605,22 @@ async function renderUsuarios(){
   document.getElementById('usuarios-list').innerHTML = allPerfis.map(u=>{
     const isMe = u.id===currentUser?.id;
     const rBadge = u.perfil==='admin'?'badge-yellow':u.perfil==='atendente'?'badge-blue':'badge-purple';
+    const ini = (u.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     return `<div class="user-card">
-      <div class="cavatar" style="width:42px;height:42px;font-size:14px;background:rgba(245,166,35,.12);color:var(--accent)">${(u.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>
-      <div class="uc-info"><div class="uc-name">${u.nome}${isMe?' <span style="font-size:10px;color:var(--muted)">(você)</span>':''}</div><div class="uc-email">${u.email}</div></div>
-      <div class="uc-actions">
-        <span class="badge ${rBadge}">${ROLE_LABELS[u.perfil]}</span>
-        ${!isMe?`<select onchange="alterarPerfil('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:6px;cursor:pointer">
-          <option value="atendente" ${u.perfil==='atendente'?'selected':''}>Atendente</option>
-          <option value="admin" ${u.perfil==='admin'?'selected':''}>Admin</option>
-          <option value="investidor" ${u.perfil==='investidor'?'selected':''}>Investidor</option>
-        </select>`:'<span style="font-size:11px;color:var(--muted2)">seu perfil</span>'}
+      <div class="cavatar" style="width:42px;height:42px;font-size:14px;background:rgba(245,166,35,.12);color:var(--accent)">${ini}</div>
+      <div class="uc-info">
+        <div class="uc-name">${u.nome}${isMe?' <span style="font-size:10px;color:var(--muted)">(você)</span>':''}</div>
+        <div class="uc-email">${u.email}</div>
+      </div>
+      <div class="uc-actions" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        ${!isMe?`
+          <select onchange="alterarPerfil('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:6px;cursor:pointer">
+            <option value="atendente" ${u.perfil==='atendente'?'selected':''}>🧑‍💼 Atendente</option>
+            <option value="admin" ${u.perfil==='admin'?'selected':''}>👑 Admin</option>
+            <option value="investidor" ${u.perfil==='investidor'?'selected':''}>📈 Investidor</option>
+          </select>
+          <button onclick="excluirUsuario('${u.id}','${u.nome.replace(/'/g,"\\'")}','${u.email}')" style="font-size:11px;padding:5px 10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:6px;cursor:pointer">🗑️ Excluir</button>
+        `:`<span class="badge ${rBadge}">${ROLE_LABELS[u.perfil]}</span><span style="font-size:11px;color:var(--muted2)">seu perfil</span>`}
       </div>
     </div>`;
   }).join('')||'<p style="color:var(--muted2)">Nenhum usuário encontrado.</p>';
@@ -632,19 +632,150 @@ async function alterarPerfil(uid, novoPerfil){
   notify('Perfil atualizado!','success'); renderUsuarios();
 }
 
+async function excluirUsuario(uid, nome, email){
+  if(!confirm(`Excluir o usuário "${nome}" (${email})?
+
+Essa ação não pode ser desfeita.`)) return;
+  try{
+    // Remove da tabela perfis
+    const {error} = await sb.from('perfis').delete().eq('id',uid);
+    if(error) throw error;
+    notify(`Usuário ${nome} removido do sistema.`,'success');
+    renderUsuarios();
+  }catch(e){
+    notify('Erro ao excluir: '+e.message,'error');
+  }
+}
+
 // ══ INVESTIDORES ══
 function renderInvestidores(){
   const el = document.getElementById('page-investidores');
-  const nota = currentPerfil?.perfil==='admin'?`<div style="margin-bottom:20px;padding:14px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:10px;font-size:13px;color:var(--purple)">📊 Investidores com login próprio veem apenas esta área.</div>`:'';
-  el.innerHTML = nota+`<div class="stats-grid">
-    <div class="stat-card" style="--accent-color:var(--green)"><div class="stat-icon">💰</div><div class="stat-label">Receita estimada/mês</div><div class="stat-val" style="color:var(--green)">R$ ${calcReceitaMes()}</div><div class="stat-sub">locações ativas</div></div>
-    <div class="stat-card" style="--accent-color:var(--blue)"><div class="stat-icon">🚗</div><div class="stat-label">Total veículos</div><div class="stat-val" style="color:var(--blue)">${allVeiculos.length}</div><div class="stat-sub">${allVeiculos.filter(v=>v.status==='disponivel').length} disponíveis</div></div>
-    <div class="stat-card" style="--accent-color:var(--accent)"><div class="stat-icon">📋</div><div class="stat-label">Locações ativas</div><div class="stat-val" style="color:var(--accent)">${allLocacoes.length}</div><div class="stat-sub">ocupação: ${calcOcupacao()}%</div></div>
-    <div class="stat-card" style="--accent-color:var(--purple)"><div class="stat-icon">👥</div><div class="stat-label">Clientes</div><div class="stat-val" style="color:var(--purple)">${allClientes.length}</div><div class="stat-sub">cadastrados</div></div>
+  const isAdmin = currentPerfil?.perfil === 'admin';
+  const isInv   = currentPerfil?.perfil === 'investidor';
+
+  // Filtra veículos do investidor logado (ou todos se admin)
+  const meusVeiculos = isInv
+    ? allVeiculos.filter(v => v.investidor_id === currentUser?.id)
+    : allVeiculos;
+
+  const meusLocIds = new Set(meusVeiculos.map(v=>v.id));
+  const meusLocs = isInv
+    ? allLocacoes.filter(l => meusLocIds.has(l.veiculo_id))
+    : allLocacoes;
+
+  const meusMantIds = new Set(meusVeiculos.map(v=>v.id));
+  const meusManut = isInv
+    ? allManutencoes.filter(m => meusMantIds.has(m.veiculo_id))
+    : allManutencoes;
+
+  // Receita do mês
+  const receitaMes = meusLocs.reduce((acc,l)=>{
+    const dias = Math.min(30,Math.ceil((new Date(l.data_fim)-new Date(l.data_inicio))/86400000));
+    return acc+(l.diaria||0)*Math.max(0,dias);
+  },0);
+
+  // Custo manutenções
+  const custoManut = meusManut.reduce((acc,m)=>acc+(m.custo||0),0);
+
+  const ocupacao = meusVeiculos.length
+    ? Math.round(meusVeiculos.filter(v=>v.status==='alugado').length/meusVeiculos.length*100)
+    : 0;
+
+  // Selector de investidor (só admin vê)
+  const selectorHtml = isAdmin ? `
+    <div style="margin-bottom:20px;padding:14px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font-size:13px;color:var(--purple);font-weight:600">👑 Visualizando carteira de:</span>
+      <select id="inv-selector" onchange="renderInvestidores()" style="font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:6px 10px;border-radius:8px">
+        <option value="">— Toda a frota</option>
+        ${allPerfis.filter(p=>p.perfil==='investidor').map(p=>`<option value="${p.id}">${p.nome}</option>`).join('')}
+      </select>
+    </div>` : '';
+
+  // Se admin selecionou um investidor específico
+  let veiculosFinal = meusVeiculos;
+  let locsFinal = meusLocs;
+  let manutFinal = meusManut;
+  if(isAdmin){
+    const sel = document.getElementById('inv-selector')?.value || '';
+    if(sel){
+      veiculosFinal = allVeiculos.filter(v=>v.investidor_id===sel);
+      const ids = new Set(veiculosFinal.map(v=>v.id));
+      locsFinal = allLocacoes.filter(l=>ids.has(l.veiculo_id));
+      manutFinal = allManutencoes.filter(m=>ids.has(m.veiculo_id));
+    }
+  }
+
+  const receitaFinal = locsFinal.reduce((acc,l)=>{
+    const dias = Math.min(30,Math.ceil((new Date(l.data_fim)-new Date(l.data_inicio))/86400000));
+    return acc+(l.diaria||0)*Math.max(0,dias);
+  },0);
+  const custoFinal = manutFinal.reduce((acc,m)=>acc+(m.custo||0),0);
+  const ocupFinal = veiculosFinal.length
+    ? Math.round(veiculosFinal.filter(v=>v.status==='alugado').length/veiculosFinal.length*100) : 0;
+
+  el.innerHTML = selectorHtml + `
+  <div class="stats-grid">
+    <div class="stat-card" style="--accent-color:var(--green)">
+      <div class="stat-icon">💰</div><div class="stat-label">Receita estimada/mês</div>
+      <div class="stat-val" style="color:var(--green)">R$ ${receitaFinal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+      <div class="stat-sub">${locsFinal.length} locações</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--blue)">
+      <div class="stat-icon">🚗</div><div class="stat-label">Veículos na carteira</div>
+      <div class="stat-val" style="color:var(--blue)">${veiculosFinal.length}</div>
+      <div class="stat-sub">${veiculosFinal.filter(v=>v.status==='disponivel').length} disponíveis · ${ocupFinal}% ocupação</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--red)">
+      <div class="stat-icon">🔧</div><div class="stat-label">Custo em manutenções</div>
+      <div class="stat-val" style="color:var(--red)">R$ ${custoFinal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+      <div class="stat-sub">${manutFinal.length} registros</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--purple)">
+      <div class="stat-icon">📈</div><div class="stat-label">Lucro estimado/mês</div>
+      <div class="stat-val" style="color:var(--purple)">R$ ${Math.max(0,receitaFinal-custoFinal).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+      <div class="stat-sub">receita − manutenções</div>
+    </div>
   </div>
-  <div class="card"><div class="card-header"><span class="card-title">Relatório de frota</span></div>
-    <table><thead><tr><th>Veículo</th><th>Tipo</th><th>Status</th><th>Diária</th></tr></thead>
-    <tbody>${allVeiculos.map(v=>`<tr><td><div style="font-weight:500">${v.marca} ${v.modelo}</div><div style="font-size:11px;color:var(--muted)">${v.placa}</div></td><td>${v.tipo==='carro'?'🚗 Carro':'🏍️ Moto'}</td><td>${statusBadge(v.status)}</td><td style="color:var(--accent);font-weight:600">R$ ${(v.diaria||0).toFixed(2)}</td></tr>`).join('')}</tbody></table>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-header"><span class="card-title">🚗 Meus veículos</span></div>
+    <table><thead><tr><th>Veículo</th><th>Placa</th><th>Tipo</th><th>Diária</th><th>Status</th></tr></thead>
+    <tbody>${veiculosFinal.length ? veiculosFinal.map(v=>`
+      <tr>
+        <td><div style="font-weight:500">${v.marca} ${v.modelo}</div><div style="font-size:11px;color:var(--muted)">${v.ano||''} · ${v.cor||''}</div></td>
+        <td>${v.placa}</td>
+        <td>${v.tipo==='carro'?'🚗 Carro':'🏍️ Moto'}</td>
+        <td style="color:var(--accent);font-weight:600">R$ ${(v.diaria||0).toFixed(2)}</td>
+        <td>${statusBadge(v.status)}</td>
+      </tr>`).join('') : '<tr class="empty-row"><td colspan="5">Nenhum veículo na carteira</td></tr>'}
+    </tbody></table>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-header"><span class="card-title">📋 Histórico de locações</span></div>
+    <table><thead><tr><th>Veículo</th><th>Cliente</th><th>Período</th><th>Total</th><th>Status</th></tr></thead>
+    <tbody>${locsFinal.length ? locsFinal.map(l=>`
+      <tr>
+        <td>${l.veiculos?.marca||''} ${l.veiculos?.modelo||''}<div style="font-size:11px;color:var(--muted)">${l.veiculos?.placa||''}</div></td>
+        <td>${l.clientes?.nome||'—'}</td>
+        <td style="font-size:12px">${fmtData(l.data_inicio)} a ${fmtData(l.data_fim)}</td>
+        <td style="color:var(--green);font-weight:600">R$ ${(l.total||0).toFixed(2)}</td>
+        <td>${l.status==='ativa'?'<span class="badge badge-green">Ativa</span>':l.status==='encerrada'?'<span class="badge badge-blue">Encerrada</span>':'<span class="badge badge-red">Cancelada</span>'}</td>
+      </tr>`).join('') : '<tr class="empty-row"><td colspan="5">Nenhuma locação</td></tr>'}
+    </tbody></table>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-header"><span class="card-title">🔧 Manutenções</span></div>
+    <table><thead><tr><th>Veículo</th><th>Serviço</th><th>Custo</th><th>Status</th></tr></thead>
+    <tbody>${manutFinal.length ? manutFinal.map(m=>`
+      <tr>
+        <td>${m.veiculos?.marca||''} ${m.veiculos?.modelo||''}<div style="font-size:11px;color:var(--muted)">${m.veiculos?.placa||''}</div></td>
+        <td>${m.tipo}<div style="font-size:11px;color:var(--muted)">${m.descricao||''}</div></td>
+        <td style="color:var(--red)">R$ ${(m.custo||0).toFixed(2)}</td>
+        <td>${m.status==='concluida'?'<span class="badge badge-green">Concluída</span>':m.status==='em_andamento'?'<span class="badge badge-blue">Em andamento</span>':'<span class="badge badge-yellow">Pendente</span>'}</td>
+      </tr>`).join('') : '<tr class="empty-row"><td colspan="4">Nenhuma manutenção</td></tr>'}
+    </tbody></table>
   </div>`;
 }
 
@@ -661,22 +792,17 @@ function calcOcupacao(){
 
 
 // ══ RECONEXÃO AO VOLTAR PARA A ABA ══
-document.addEventListener('visibilitychange', async ()=>{
+document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState !== 'visible') return;
-  // Reconecta SSE se desconectou
   const cfg = JSON.parse(localStorage.getItem(EVO_CFG_KEY)||'{}');
   if(cfg.bridgeUrl && (!sseSource || sseSource.readyState === 2)){
-    console.log('[SSE] Reconectando após retorno à aba...');
     conectarSSE(cfg.bridgeUrl, cfg.secret||'FleetPro2025');
   }
-  // Se o chat está visível e travado, reabre do zero
   const chatPage = document.getElementById('page-chat');
   if(chatPage && chatPage.classList.contains('active') && activeChatId){
     const area = document.getElementById('chat-msgs');
-    if(area && (area.innerHTML.includes('Carregando') || area.innerHTML.includes('Sem mensagens ainda'))){
-      const _cid = activeChatId;
-      activeChatId = null;
-      abrirChat(_cid);
+    if(area && area.innerHTML.includes('Carregando')){
+      renderChatMsgs(activeChatId);
     }
   }
 });
