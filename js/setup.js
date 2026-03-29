@@ -37,7 +37,13 @@ async function setupConectar(){
 
   btn.textContent='⏳ Conectando...'; btn.disabled=true;
   try{
-    sb=createClient(url,key);
+    sb=createClient(url, key, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false
+      }
+    });
     const {error}=await sb.auth.getSession();
     if(error) throw error;
     localStorage.setItem('fp_url',url);
