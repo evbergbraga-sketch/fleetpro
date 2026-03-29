@@ -24,10 +24,9 @@ window.addEventListener('DOMContentLoaded', async()=>{
     if(event==='SIGNED_OUT') goLayer('login');
   });
 
-  // Conecta SSE APÓS dados carregarem para evitar mensagens antes dos clientes
+  // Reconecta SSE se havia config salva
   const cfg = JSON.parse(localStorage.getItem('fp_evo_cfg')||'{}');
   if(cfg.bridgeUrl && cfg.secret){
-    // Aguarda 2s para garantir que allClientes já foi carregado
-    setTimeout(()=> conectarSSE(cfg.bridgeUrl, cfg.secret), 2000);
+    setTimeout(()=> conectarSSE(cfg.bridgeUrl, cfg.secret), 2500);
   }
 });
