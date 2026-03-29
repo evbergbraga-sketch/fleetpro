@@ -2,9 +2,11 @@
 window.addEventListener('DOMContentLoaded', async()=>{
   const url = localStorage.getItem('fp_url');
   const key = localStorage.getItem('fp_key');
+
+  // Sem credenciais — mostra setup
   if(!url||!key){ goLayer('setup'); return; }
 
-  // Já tem config — mostra app direto, sem piscar tela de setup
+  // Já tem credenciais — vai direto para app sem piscar setup
   goLayer('app');
 
   sb = createClient(url, key, {
@@ -12,23 +14,10 @@ window.addEventListener('DOMContentLoaded', async()=>{
   });
 
   try{
-    const {data:{session}, error} = await sb.auth.getSession();
-    if(error) throw error;
+    const {data:{session}} = await sb.auth.getSession();
     if(session?.user){
       await carregarPerfil(session.user);
-      const lastPage = sessionStorage.getItem('fp_last_page');
-      const lastChat = sessionStorage.getItem('fp_last_chat');
-      sessionStorage.removeItem('fp_last_page');
-      sessionStorage.removeItem('fp_last_chat');
-      if(lastPage){
-        setTimeout(()=>{
-          goPage(lastPage);
-          if(lastPage === 'chat' && lastChat){
-            setTimeout(()=>abrirChat(lastChat), 500);
-          }
-        }, 800);
-      }
-      // Restaura página e chat que estavam abertos antes do reload
+      // Restaura página que estava aberta antes do reload
       const lastPage = sessionStorage.getItem('fp_last_page');
       const lastChat = sessionStorage.getItem('fp_last_chat');
       sessionStorage.removeItem('fp_last_page');
@@ -42,12 +31,13 @@ window.addEventListener('DOMContentLoaded', async()=>{
         }, 800);
       }
     } else {
+      // Sem sessão — vai para login (mas NÃO apaga as credenciais do Supabase)
       goLayer('login');
     }
   }catch(e){
-    localStorage.removeItem('fp_url');
-    localStorage.removeItem('fp_key');
-    goLayer('setup');
+    console.warn('boot erro:', e.message);
+    // NUNCA apaga fp_url e fp_key — só vai para login
+    goLayer('login');
   }
 
   sb.auth.onAuthStateChange(async(event, session)=>{
