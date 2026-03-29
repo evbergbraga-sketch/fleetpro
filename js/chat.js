@@ -799,10 +799,12 @@ function calcOcupacao(){
 // Reconexão ao voltar para a aba
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState !== 'visible'){
-    // Salva qual chat estava aberto antes de sair
+    // Salva página e chat ativos antes de sair
+    const pageAtiva = document.querySelector('.page.active')?.id?.replace('page-','');
+    if(pageAtiva) sessionStorage.setItem('fp_last_page', pageAtiva);
     if(activeChatId) sessionStorage.setItem('fp_last_chat', activeChatId);
     return;
   }
-  // Ao voltar: recarrega a página para garantir dados frescos
+  // Ao voltar: recarrega com dados frescos
   window.location.reload();
 });
