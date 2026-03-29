@@ -62,6 +62,8 @@ function goPage(id, navEl){
 
 // ══ DATA LOADING ══
 async function carregarTudo(){
+  // Limpa dados em memória para forçar reload do banco
+  allVeiculos=[]; allClientes=[]; allLocacoes=[]; allManutencoes=[]; allPerfis=[];
   await Promise.all([loadVeiculos(),loadClientes(),loadLocacoes(),loadManutencoes(),loadPerfis()]);
   renderDashboard();
   renderVeiculos();
@@ -77,7 +79,7 @@ async function carregarTudo(){
 
 async function loadVeiculos(){const {data}=await sb.from('veiculos').select('*').order('created_at',{ascending:false});allVeiculos=data||[];renderVeiculos();}
 async function loadClientes(){const {data}=await sb.from('clientes').select('*').order('nome');allClientes=data||[];renderClientes();}
-async function loadLocacoes(){const {data}=await sb.from('locacoes').select('*,veiculos(*),clientes(*)').order('data_fim',{ascending:false});allLocacoes=data||[];}
+async function loadLocacoes(){const {data}=await sb.from('locacoes').select('*,veiculos(*),clientes(*)').eq('status','ativa').order('data_fim',{ascending:false});allLocacoes=data||[];}
 async function loadManutencoes(){const {data}=await sb.from('manutencoes').select('*,veiculos(*)').order('created_at',{ascending:false});allManutencoes=data||[];}
 async function loadPerfis(){const {data}=await sb.from('perfis').select('*').order('nome');allPerfis=data||[];}
 
