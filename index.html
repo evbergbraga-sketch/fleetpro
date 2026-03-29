@@ -4,15 +4,13 @@
 <meta charset="UTF-8">
 <link rel="icon" href="data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232563EB'/><rect x='9' y='9' width='5' height='14' rx='1.5' fill='white'/><rect x='9' y='9' width='14' height='5' rx='1.5' fill='white'/><rect x='9' y='15' width='11' height='4' rx='1.5' fill='white'/></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<rect width='32' height='32' rx='7' fill='%232563EB'/><rect x='9' y='9' width='5' height='14' rx='1.5' fill='white'/><rect x='9' y='9' width='14' height='5' rx='1.5' fill='white'/><rect x='9' y='15' width='11' height='4' rx='1.5' fill='white'/></svg>"><text y='.9em' font-size='90'>🚗</text></svg>">
 <title>FleetPro | Plataforma de Locadoras</title>
-<rect width='32' height='32' rx='7' fill='%232563EB'/><rect x='9' y='9' width='5' height='14' rx='1.5' fill='white'/><rect x='9' y='9' width='14' height='5' rx='1.5' fill='white'/><rect x='9' y='15' width='11' height='4' rx='1.5' fill='white'/></svg>"><text y='.9em' font-size='90'>🚗</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
- 
+
 <!-- LAYER 1 — SETUP -->
 <div id="layer-setup" class="layer active">
   <div class="setup-box">
@@ -494,5 +492,33 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
 <script src="js/contratos.js"></script>
 <script src="js/chat.js"></script>
 <script src="js/boot.js"></script>
+
+<!-- MODAL EDITAR VEÍCULO -->
+<div class="modal-overlay" id="m-editar-veiculo">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">✏️ Editar Veículo</div><button class="modal-close" onclick="closeModal('editar-veiculo')">✕</button></div>
+    <input type="hidden" id="ev-id">
+    <div class="form-grid">
+      <div class="form-group"><label>Tipo</label><select id="ev-tipo" style="width:100%"><option value="carro">🚗 Carro</option><option value="moto">🏍️ Moto</option></select></div>
+      <div class="form-group"><label>Marca</label><input type="text" id="ev-marca" style="width:100%"></div>
+      <div class="form-group"><label>Modelo</label><input type="text" id="ev-modelo" style="width:100%"></div>
+      <div class="form-group"><label>Placa</label><input type="text" id="ev-placa" style="width:100%"></div>
+      <div class="form-group"><label>Ano</label><input type="number" id="ev-ano" style="width:100%"></div>
+      <div class="form-group"><label>Cor</label><input type="text" id="ev-cor" style="width:100%"></div>
+      <div class="form-group"><label>Câmbio</label><select id="ev-cambio" style="width:100%"><option value="Automatico">Automático</option><option value="Manual">Manual</option></select></div>
+      <div class="form-group"><label>Km atual</label><input type="number" id="ev-km" style="width:100%"></div>
+      <div class="form-group"><label>Diária (R$)</label><input type="number" id="ev-diaria" style="width:100%"></div>
+      <div class="form-group"><label>Status</label><select id="ev-status" style="width:100%"><option value="disponivel">✅ Disponível</option><option value="alugado">🔴 Alugado</option><option value="manutencao">🔧 Manutenção</option></select></div>
+      <div class="form-group full"><label>📈 Investidor (proprietário)</label><select id="ev-investidor" style="width:100%"><option value="">— Nenhum (frota própria)</option></select></div>
+      <div class="form-group full"><label>Observações</label><textarea id="ev-obs" rows="2" style="width:100%;resize:none"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('editar-veiculo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="atualizarVeiculo()">✓ Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+
 </body>
 </html>
