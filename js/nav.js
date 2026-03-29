@@ -90,6 +90,25 @@ function renderDashboard(){
   const locAtivas = meusLocs.filter(l=>l.status==='ativa'||!l.status);
   document.getElementById('st-locacoes').textContent=locAtivas.length;
 
+  // Card alertas de atraso
+  const atrasados = meusLocs.filter(l=>Math.ceil((new Date(l.data_fim)-new Date())/86400000) < 0);
+  const alertCard = document.getElementById('st-alert-card');
+  const alertVal  = document.getElementById('st-alert-val');
+  const alertSub  = document.getElementById('st-alert-sub');
+  if(alertVal){
+    alertVal.textContent = atrasados.length;
+    alertSub.textContent = atrasados.length === 0 ? 'Tudo em dia ✓' : `veículo${atrasados.length>1?'s':''} com devolução atrasada`;
+    if(alertCard){
+      if(atrasados.length > 0){
+        alertCard.classList.add('stat-alert');
+        alertVal.style.color = '#dc2626';
+      } else {
+        alertCard.classList.remove('stat-alert');
+        alertVal.style.color = '#16a34a';
+      }
+    }
+  }
+
   const dl=document.getElementById('dash-loc');
   dl.innerHTML=meusLocs.length?meusLocs.map(l=>{
     const diff=Math.ceil((new Date(l.data_fim)-new Date())/86400000);
