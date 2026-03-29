@@ -2,19 +2,12 @@
 window.addEventListener('DOMContentLoaded', async()=>{
   const url = localStorage.getItem('fp_url');
   const key = localStorage.getItem('fp_key');
-
-  // Sem credenciais — mostra setup
   if(!url||!key){ goLayer('setup'); return; }
 
-  // Já tem credenciais — vai direto para app sem piscar setup
-  goLayer('app');
-
-  sb = createClient(url, key, {
-    auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:false }
-  });
-
+  sb = createClient(url, key);
   try{
-    const {data:{session}} = await sb.auth.getSession();
+    const {data:{session}, error} = await sb.auth.getSession();
+    if(error) throw error;
     if(session?.user){
       await carregarPerfil(session.user);
       // Restaura página que estava aberta antes do reload
@@ -25,19 +18,18 @@ window.addEventListener('DOMContentLoaded', async()=>{
       if(lastPage){
         setTimeout(()=>{
           goPage(lastPage);
-          if(lastPage === 'chat' && lastChat){
+          if(lastPage==='chat' && lastChat){
             setTimeout(()=>abrirChat(lastChat), 500);
           }
         }, 800);
       }
     } else {
-      // Sem sessão — vai para login (mas NÃO apaga as credenciais do Supabase)
       goLayer('login');
     }
   }catch(e){
-    console.warn('boot erro:', e.message);
-    // NUNCA apaga fp_url e fp_key — só vai para login
-    goLayer('login');
+    localStorage.removeItem('fp_url');
+    localStorage.removeItem('fp_key');
+    goLayer('setup');
   }
 
   sb.auth.onAuthStateChange(async(event, session)=>{
@@ -45,7 +37,7 @@ window.addEventListener('DOMContentLoaded', async()=>{
     if(event==='SIGNED_OUT') goLayer('login');
   });
 
-  // Conecta SSE após dados carregarem
+  // Reconecta SSE se havia config salva
   const cfg = JSON.parse(localStorage.getItem('fp_evo_cfg')||'{}');
   if(cfg.bridgeUrl && cfg.secret){
     setTimeout(()=> conectarSSE(cfg.bridgeUrl, cfg.secret), 2500);
