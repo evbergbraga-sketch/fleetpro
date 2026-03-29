@@ -77,7 +77,9 @@ function receberMsgSSE(msg){
     }
   }
 
-  renderChatContacts();
+  // Só re-renderiza contatos se allClientes já estiver carregado
+  if(allClientes && allClientes.length > 0) renderChatContacts();
+  else loadClientes().then(()=>renderChatContacts());
   const nome = msg.nomeCliente||msg.numero||'Desconhecido';
   const prev = msg.texto ? msg.texto.slice(0,40) : '(mídia)';
   notify('💬 '+nome+': '+prev,'success');
@@ -268,7 +270,11 @@ async function renderChatMsgs(cid){
   area.scrollTop = area.scrollHeight;
 }
 
-function renderChatContacts(){
+async function renderChatContacts(){
+  // Garante que clientes estão carregados antes de renderizar
+  if(!allClientes || allClientes.length === 0){
+    try{ await loadClientes(); }catch(e){}
+  }
   const s = (document.getElementById('chat-search')?.value||'').toLowerCase();
   const numsCadastrados = new Set(allClientes.map(c=>(c.telefone||'').replace(/\D/g,'').slice(-11)));
   const desconhecidosMap = {};
@@ -663,11 +669,14 @@ document.addEventListener('visibilitychange', async ()=>{
     console.log('[SSE] Reconectando após retorno à aba...');
     conectarSSE(cfg.bridgeUrl, cfg.secret||'FleetPro2025');
   }
-  // Recarrega chat se estava travado em carregando
-  if(activeChatId){
+  // Se o chat está visível e travado, reabre do zero
+  const chatPage = document.getElementById('page-chat');
+  if(chatPage && chatPage.classList.contains('active') && activeChatId){
     const area = document.getElementById('chat-msgs');
-    if(area && (area.innerHTML.includes('Carregando') || area.children.length === 0)){
-      renderChatMsgs(activeChatId);
+    if(area && (area.innerHTML.includes('Carregando') || area.innerHTML.includes('Sem mensagens ainda'))){
+      const _cid = activeChatId;
+      activeChatId = null;
+      abrirChat(_cid);
     }
   }
 });
