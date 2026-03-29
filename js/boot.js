@@ -16,13 +16,17 @@ window.addEventListener('DOMContentLoaded', async()=>{
     if(error) throw error;
     if(session?.user){
       await carregarPerfil(session.user);
-      // Restaura o chat que estava aberto antes do reload
+      // Restaura página e chat que estavam abertos antes do reload
+      const lastPage = sessionStorage.getItem('fp_last_page');
       const lastChat = sessionStorage.getItem('fp_last_chat');
-      if(lastChat){
-        sessionStorage.removeItem('fp_last_chat');
+      sessionStorage.removeItem('fp_last_page');
+      sessionStorage.removeItem('fp_last_chat');
+      if(lastPage){
         setTimeout(()=>{
-          goPage('chat');
-          setTimeout(()=>abrirChat(lastChat), 500);
+          goPage(lastPage);
+          if(lastPage === 'chat' && lastChat){
+            setTimeout(()=>abrirChat(lastChat), 500);
+          }
         }, 800);
       }
     } else {
