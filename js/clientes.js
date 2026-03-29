@@ -84,6 +84,14 @@ async function verPerfilClienteById(id){
 }
 
 async function _renderPerfilCliente(c){
+  // Mostra loading imediatamente
+  document.getElementById('perfil-cliente-body').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;gap:14px">
+      <div style="width:40px;height:40px;border:3px solid #E2E8F0;border-top-color:#2563EB;border-radius:50%;animation:spin .7s linear infinite"></div>
+      <div style="font-size:13px;color:var(--muted)">Carregando perfil...</div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+  document.getElementById('m-perfil-cliente').classList.add('show');
   const {data:locs} = await sb.from('locacoes')
     .select('*,veiculos(marca,modelo,placa,tipo)')
     .eq('cliente_id', c.id)
@@ -200,7 +208,6 @@ async function _renderPerfilCliente(c){
   </div></div>`;
 
   document.getElementById('perfil-cliente-body').innerHTML = html;
-  document.getElementById('m-perfil-cliente').classList.add('show');
 }
 
 function editarCliente(id){
@@ -268,7 +275,10 @@ async function confirmarDevolucao(locId, veiculoId, nomeVeiculo){
     if(e2) throw e2;
 
     notify('Devolução confirmada! Veículo disponível. ✅','success');
-    await carregarTudo();
+    await Promise.all([loadVeiculos(), loadLocacoes(), loadManutencoes()]);
+    renderDashboard();
+    renderVeiculos();
+    renderDashboard();
   }catch(e){
     notify('Erro ao confirmar devolução: '+e.message,'error');
   }
