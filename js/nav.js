@@ -30,16 +30,34 @@ function goPage(id, navEl){
   btn.style.display=c.action?'':'none';
   btn.textContent=c.action;
   if(c.modal) btn.onclick=()=>openModal(c.modal, id==='motos'?'moto':id==='carros'?'carro':null);
-  if(id==='contratos'){previewContrato();populateContratosSelects();}
-  if(id==='calendario'){renderCal();}
+  // Recarrega dados ao trocar de aba
+  if(id==='carros'||id==='motos'){
+    loadVeiculos().then(()=>preencherSelectInvestidores());
+  }
+  if(id==='clientes'){
+    loadClientes();
+  }
+  if(id==='contratos'){
+    loadVeiculos();loadClientes();
+    setTimeout(()=>{previewContrato();populateContratosSelects();},300);
+  }
+  if(id==='calendario'){
+    loadLocacoes().then(()=>renderCal());
+  }
   if(id==='chat'){
     renderChatContacts();
     if(activeChatId) renderChatMsgs(activeChatId);
   }
   if(id==='usuarios'){renderUsuarios();}
-  if(id==='investidores'){renderInvestidores();}
-  if(id==='historico'){renderHistVeiculosList();}
-  if(id==='carros'||id==='motos'){preencherSelectInvestidores();}
+  if(id==='investidores'){
+    Promise.all([loadVeiculos(),loadLocacoes(),loadManutencoes()]).then(()=>renderInvestidores());
+  }
+  if(id==='historico'){
+    loadVeiculos().then(()=>renderHistVeiculosList());
+  }
+  if(id==='dashboard'){
+    carregarTudo();
+  }
 }
 
 // ══ DATA LOADING ══
