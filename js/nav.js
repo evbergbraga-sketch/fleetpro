@@ -47,8 +47,10 @@ function goPage(id, navEl){
   if(id==='chat'){
     renderChatContacts();
     if(activeChatId){
-      // Força recarregar mensagens sempre que volta para o chat
-      setTimeout(()=>renderChatMsgs(activeChatId), 100);
+      // Reabre o chat do zero para garantir que carrega do banco
+      const _cid = activeChatId;
+      activeChatId = null;
+      setTimeout(()=>abrirChat(_cid), 150);
     }
   }
   if(id==='usuarios'){renderUsuarios();}
@@ -65,8 +67,6 @@ function goPage(id, navEl){
 
 // ══ DATA LOADING ══
 async function carregarTudo(){
-  // Limpa dados em memória para forçar reload do banco
-  allVeiculos=[]; allClientes=[]; allLocacoes=[]; allManutencoes=[]; allPerfis=[];
   await Promise.all([loadVeiculos(),loadClientes(),loadLocacoes(),loadManutencoes(),loadPerfis()]);
   renderDashboard();
   renderVeiculos();
@@ -80,11 +80,11 @@ async function carregarTudo(){
   }
 }
 
-async function loadVeiculos(){const {data}=await sb.from('veiculos').select('*').order('created_at',{ascending:false});allVeiculos=data||[];renderVeiculos();}
-async function loadClientes(){const {data}=await sb.from('clientes').select('*').order('nome');allClientes=data||[];renderClientes();}
-async function loadLocacoes(){const {data}=await sb.from('locacoes').select('*,veiculos(*),clientes(*)').eq('status','ativa').order('data_fim',{ascending:false});allLocacoes=data||[];}
-async function loadManutencoes(){const {data}=await sb.from('manutencoes').select('*,veiculos(*)').order('created_at',{ascending:false});allManutencoes=data||[];}
-async function loadPerfis(){const {data}=await sb.from('perfis').select('*').order('nome');allPerfis=data||[];}
+async function loadVeiculos(){const {data}=await sb.from('veiculos').select('*').order('created_at',{ascending:false});if(data) allVeiculos=data;renderVeiculos();}
+async function loadClientes(){const {data}=await sb.from('clientes').select('*').order('nome');if(data) allClientes=data;renderClientes();}
+async function loadLocacoes(){const {data}=await sb.from('locacoes').select('*,veiculos(*),clientes(*)').eq('status','ativa').order('data_fim',{ascending:false});if(data) allLocacoes=data;}
+async function loadManutencoes(){const {data}=await sb.from('manutencoes').select('*,veiculos(*)').order('created_at',{ascending:false});if(data) allManutencoes=data;}
+async function loadPerfis(){const {data}=await sb.from('perfis').select('*').order('nome');if(data) allPerfis=data;}
 
 // ══ BUSCA GLOBAL ══
 function initBuscaGlobal(){
