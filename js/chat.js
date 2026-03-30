@@ -59,7 +59,7 @@ function conectarSSE(bridgeUrl, secret){
 }
 
 function receberMsgSSE(msg){
-  console.log('[SSE] Mensagem chegou:', JSON.stringify(msg));
+  console.log('[SSE] Mensagem chegou — tipo:', msg.tipoMsg||msg.tipo, '| mediaUrl:', msg.mediaUrl||msg.media_url||'nenhuma', '| completo:', JSON.stringify(msg));
   const cidPorId     = msg.clienteId||null;
   const cidPorNumero = encontrarClientePorNumero(msg.numero);
   const cid          = cidPorId || cidPorNumero || msg.numero;
@@ -238,7 +238,7 @@ function renderMsgItem(m){
     } else {
       corpo = '<div style="font-size:12px;color:var(--muted)">🎵 Áudio '+(m.texto||'')+'</div>';
     }
-  } else if(tipo==='video'||tipo==='videoMessage'){
+  } else if(tipo==='video'||tipo==='videoMessage'||tipo==='video_message'||tipo==='Video'||tipo==='VIDEO'){
     if(mediaUrl){
       corpo = '<video controls style="max-width:280px;border-radius:8px;display:block"><source src="'+mediaUrl+'">Seu navegador não suporta vídeo.</video>';
       if(m.texto) corpo += '<div style="font-size:12px;margin-top:4px">'+m.texto+'</div>';
