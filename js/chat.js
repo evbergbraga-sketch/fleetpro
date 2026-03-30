@@ -570,8 +570,12 @@ async function verPerfilCliente(){
   if(!activeChatId){ notify('Selecione um contato','error'); return; }
   const c = allClientes.find(x=>x.id===activeChatId);
   if(!c){ notify('Cadastre o cliente para ver o perfil','error'); return; }
-  document.getElementById('perfil-cli-titulo').textContent = '👤 '+c.nome;
-  const body = document.getElementById('perfil-cli-body');
+  // Usa o modal existente de perfil do cliente (clientes.js)
+  await _renderPerfilCliente(c);
+  return;
+  // código legado abaixo mantido como fallback
+  const body = document.getElementById('perfil-cliente-body');
+  if(!body){ notify('Modal de perfil não encontrado','error'); return; }
   body.innerHTML = '<div style="padding:16px;color:var(--muted2);font-size:13px">⏳ Carregando...</div>';
   document.getElementById('m-perfil-cliente').classList.add('show');
   const {data:locs} = await sb.from('locacoes')
