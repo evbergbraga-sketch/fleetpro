@@ -35,7 +35,7 @@ function goPage(id, navEl){
   if(id==='calendario'){renderCal();}
   if(id==='chat'){
     renderChatContacts();
-    renderRespostasRapidas();
+    if(typeof renderRespostasRapidas === "function") renderRespostasRapidas();
     if(activeChatId){
       const _cid = activeChatId;
       activeChatId = null;
