@@ -344,13 +344,31 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
               </div>
             </div>
             <div style="margin-bottom:14px">
-              <div class="cst">Respostas rápidas</div>
-              <div class="qr" onclick="setMsg(this.textContent)">Olá! Como posso ajudar? 😊</div>
-              <div class="qr" onclick="setMsg(this.textContent)">Carros a partir de R$ 120/dia. Motos a partir de R$ 60/dia.</div>
-              <div class="qr" onclick="setMsg(this.textContent)">Preciso de CNH, CPF e comprovante de residência.</div>
-              <div class="qr" onclick="setMsg(this.textContent)">Posso gerar o contrato agora! Quando retira o veículo?</div>
-              <div class="qr" onclick="setMsg(this.textContent)">Devolução das 8h às 19h.</div>
-              <div class="qr" onclick="setMsg(this.textContent)">Veículo entregue! Obrigado pela preferência 🚗✅</div>
+              <div class="cst" style="display:flex;justify-content:space-between;align-items:center">
+                Respostas rápidas
+                <span style="font-size:10px;color:var(--accent);cursor:pointer;font-weight:500" onclick="gerenciarRespostas()">✏️ editar</span>
+              </div>
+              <div id="chat-respostas-rapidas"></div>
+              <script>
+              (function(){
+                const RQ_KEY='fp_rq';
+                const DEF=['Olá! Como posso ajudar? 😊','Carros a partir de R$ 120/dia. Motos a partir de R$ 60/dia.','Preciso de CNH, CPF e comprovante de residência.','Posso gerar o contrato agora! Quando retira o veículo?','Devolução das 8h às 19h.','Veículo entregue! Obrigado pela preferência 🚗✅'];
+                function getRQ(){ try{ return JSON.parse(localStorage.getItem(RQ_KEY))||DEF; }catch(_){ return DEF; } }
+                function renderRQ(){
+                  const el=document.getElementById('chat-respostas-rapidas'); if(!el) return;
+                  el.innerHTML=getRQ().map(r=>`<div class="qr" onclick="setMsg(this.dataset.t)" data-t="${r.replace(/"/g,'&quot;')}">${r}</div>`).join('');
+                }
+                window.gerenciarRespostas=function(){
+                  const lista=getRQ();
+                  const nova=prompt('Edite as respostas (uma por linha):\n\nDica: adicione ou remova linhas para personalizar.', lista.join('\n'));
+                  if(nova===null) return;
+                  const novas=nova.split('\n').map(s=>s.trim()).filter(Boolean);
+                  localStorage.setItem(RQ_KEY,JSON.stringify(novas));
+                  renderRQ();
+                };
+                document.addEventListener('DOMContentLoaded', ()=>setTimeout(renderRQ,800));
+              })();
+              </script>
             </div>
             <div><div class="cst">Assinatura</div>
               <div class="form-group" style="margin-bottom:8px"><label>Nome da locadora</label><input type="text" id="wpp-nome-locadora" value="FleetPro Locadora" style="width:100%;font-size:12px"></div>
