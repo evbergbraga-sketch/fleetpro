@@ -306,6 +306,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
               <div><div style="font-size:13px;font-weight:600" id="chat-name">Selecione</div><div style="font-size:11px;color:var(--muted)" id="chat-info">—</div></div>
               <div style="margin-left:auto;display:flex;gap:8px">
                 <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="verPerfilCliente()">Perfil</button>
+                <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;display:none" id="btn-cadastrar-chat" onclick="abrirCadastroClienteChat()">👤 Cadastrar</button>
                 <button class="btn btn-primary" style="font-size:11px;padding:5px 10px" onclick="goPage('contratos')">Gerar contrato</button>
               </div>
             </div>
@@ -342,13 +343,11 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
                 <div style="font-size:10px;color:var(--muted2);line-height:1.4" id="webhook-url-display"></div>
               </div>
             </div>
-            <div style="margin-bottom:14px"><div class="cst">Respostas rápidas</div>
-              <div class="qr" onclick="setMsg(this.textContent)">Olá! Como posso ajudar? 😊</div>
-              <div class="qr" onclick="setMsg(this.textContent)">Carros a partir de R$ 120/dia. Motos a partir de R$ 60/dia.</div>
-              <div class="qr" onclick="setMsg(this.textContent)">Preciso de CNH, CPF e comprovante de residência.</div>
-              <div class="qr" onclick="setMsg(this.textContent)">Posso gerar o contrato agora! Quando retira o veículo?</div>
-              <div class="qr" onclick="setMsg(this.textContent)">Devolução das 8h às 19h.</div>
-              <div class="qr" onclick="setMsg(this.textContent)">Veículo entregue! Obrigado pela preferência 🚗✅</div>
+            <div style="margin-bottom:14px">
+              <div class="cst" style="display:flex;justify-content:space-between;align-items:center">
+                Respostas rápidas
+              </div>
+              <div id="chat-respostas-rapidas"></div>
             </div>
             <div><div class="cst">Assinatura</div>
               <div class="form-group" style="margin-bottom:8px"><label>Nome da locadora</label><input type="text" id="wpp-nome-locadora" value="FleetPro Locadora" style="width:100%;font-size:12px"></div>
