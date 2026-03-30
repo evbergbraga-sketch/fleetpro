@@ -225,6 +225,13 @@ function renderMsgItem(m){
     } else {
       corpo = '<div style="font-size:12px;color:var(--muted)">🎵 Áudio '+(m.texto||'')+'</div>';
     }
+  } else if(tipo==='video'||tipo==='videoMessage'){
+    if(mediaUrl){
+      corpo = '<video controls style="max-width:280px;border-radius:8px;display:block"><source src="'+mediaUrl+'">Seu navegador não suporta vídeo.</video>';
+      if(m.texto && m.texto!=='Vídeo') corpo += '<div style="font-size:12px;margin-top:4px">'+m.texto+'</div>';
+    } else {
+      corpo = '<div style="font-size:12px;color:var(--muted)">🎥 Vídeo '+(m.texto||'')+'</div>';
+    }
   } else if(tipo==='document'||tipo==='documentMessage'){
     if(mediaUrl){
       corpo = '<div>📎 <a href="'+mediaUrl+'" target="_blank" style="color:var(--accent)">'+(m.texto||'Abrir documento')+'</a></div>';
