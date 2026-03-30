@@ -35,6 +35,7 @@ function goPage(id, navEl){
   if(id==='calendario'){renderCal();}
   if(id==='chat'){
     renderChatContacts();
+    renderRespostasRapidas();
     if(activeChatId){
       const _cid = activeChatId;
       activeChatId = null;
@@ -109,7 +110,12 @@ function renderDashboard(){
     const diff=Math.ceil((new Date(l.data_fim)-new Date())/86400000);
     const b=diff<0?'badge-red':diff===0?'badge-yellow':'badge-green';
     const lb=diff<0?'Atrasado':diff===0?'Hoje':'No prazo';
-    return `<tr><td><div style="display:flex;align-items:center;gap:8px"><div class="vi ${l.veiculos?.tipo==='carro'?'vi-car':'vi-moto'}">${l.veiculos?.tipo==='carro'?'🚗':'🏍️'}</div><div><div style="font-weight:500">${l.veiculos?.modelo||'—'}</div><div style="font-size:11px;color:var(--muted)">${l.veiculos?.placa||''}</div></div></div></td><td>${l.clientes?.nome||'—'}</td><td>${fmtData(l.data_fim)}</td><td><span class="badge ${b}">${lb}</span></td></tr>`;
+    return `<tr style="cursor:pointer" onclick="goPage('clientes');setTimeout(()=>{document.getElementById('s-clientes').value='${(l.clientes?.nome||'').replace(/'/g,"\\'")}';renderClientes();},400)" title="Ver cliente">
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="vi ${l.veiculos?.tipo==='carro'?'vi-car':'vi-moto'}">${l.veiculos?.tipo==='carro'?'🚗':'🏍️'}</div><div><div style="font-weight:500">${l.veiculos?.modelo||'—'}</div><div style="font-size:11px;color:var(--muted)">${l.veiculos?.placa||''}</div></div></div></td>
+      <td>${l.clientes?.nome||'—'}</td>
+      <td>${fmtData(l.data_fim)}</td>
+      <td><span class="badge ${b}">${lb}</span></td>
+    </tr>`;
   }).join(''):'<tr class="empty-row"><td colspan="4">Nenhuma locação ativa</td></tr>';
 
   const dm=document.getElementById('dash-man');
