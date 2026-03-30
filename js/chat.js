@@ -6,19 +6,6 @@ let wppOk = false;
 let sseSource = null;
 const EVO_CFG_KEY = 'fp_evo_cfg';
 
-// ══ MENSAGENS NÃO LIDAS ══
-const UNREAD_KEY = 'fp_unread';
-function getUnread(){ try{ return JSON.parse(localStorage.getItem(UNREAD_KEY)||'{}'); }catch(_){ return {}; } }
-function incrementUnread(cid){ const u=getUnread(); u[cid]=(u[cid]||0)+1; localStorage.setItem(UNREAD_KEY,JSON.stringify(u)); }
-function clearUnread(cid){ const u=getUnread(); delete u[cid]; localStorage.setItem(UNREAD_KEY,JSON.stringify(u)); }
-function totalUnread(){ return Object.values(getUnread()).reduce((a,b)=>a+b,0); }
-function atualizarBadgeNotif(){
-  const total=totalUnread();
-  const dot=document.querySelector('.notif-dot');
-  if(dot) dot.style.display=total>0?'block':'none';
-  document.title=total>0?`(${total}) FleetPro | Plataforma de Locadoras`:'FleetPro | Plataforma de Locadoras';
-}
-
 function fmtPhone(tel){
   if(!tel) return '';
   let n = tel.replace(/\D/g,'');
@@ -59,7 +46,7 @@ function conectarSSE(bridgeUrl, secret){
 }
 
 function receberMsgSSE(msg){
-  console.log('[SSE] Mensagem chegou — tipo:', msg.tipoMsg||msg.tipo, '| mediaUrl:', msg.mediaUrl||msg.media_url||'nenhuma', '| completo:', JSON.stringify(msg));
+  console.log('[SSE] Mensagem chegou:', JSON.stringify(msg));
   const cidPorId     = msg.clienteId||null;
   const cidPorNumero = encontrarClientePorNumero(msg.numero);
   const cid          = cidPorId || cidPorNumero || msg.numero;
@@ -90,9 +77,7 @@ function receberMsgSSE(msg){
     }
   }
 
-  if(!estaAberta) incrementUnread(cid);
   if(allClientes && allClientes.length > 0) renderChatContacts();
-  atualizarBadgeNotif();
   const nome = msg.nomeCliente||msg.numero||'Desconhecido';
   const prev = msg.texto ? msg.texto.slice(0,40) : '(mídia)';
   notify('💬 '+nome+': '+prev,'success');
@@ -133,6 +118,7 @@ async function conectarWpp(){
 }
 
 function preencherCamposWpp(){
+  setTimeout(renderRespostasRapidas, 300);
   const cfg = JSON.parse(localStorage.getItem(EVO_CFG_KEY)||'{}');
   const set = (id, val)=>{ const e=document.getElementById(id); if(e&&val) e.value=val; };
   set('wpp-url',    cfg.apiUrl);
@@ -238,13 +224,6 @@ function renderMsgItem(m){
     } else {
       corpo = '<div style="font-size:12px;color:var(--muted)">🎵 Áudio '+(m.texto||'')+'</div>';
     }
-  } else if(tipo==='video'||tipo==='videoMessage'||tipo==='video_message'||tipo==='Video'||tipo==='VIDEO'){
-    if(mediaUrl){
-      corpo = '<video controls style="max-width:280px;border-radius:8px;display:block"><source src="'+mediaUrl+'">Seu navegador não suporta vídeo.</video>';
-      if(m.texto) corpo += '<div style="font-size:12px;margin-top:4px">'+m.texto+'</div>';
-    } else {
-      corpo = '<div style="font-size:12px;color:var(--muted)">🎥 Vídeo '+(m.texto||'')+'</div>';
-    }
   } else if(tipo==='document'||tipo==='documentMessage'){
     if(mediaUrl){
       corpo = '<div>📎 <a href="'+mediaUrl+'" target="_blank" style="color:var(--accent)">'+(m.texto||'Abrir documento')+'</a></div>';
@@ -314,16 +293,17 @@ function renderChatContacts(){
   });
   const desconhecidos = Object.values(desconhecidosMap);
   const clientes = [...allClientes, ...desconhecidos].filter(c=>!s||c.nome.toLowerCase().includes(s)||(c.telefone||'').includes(s));
-  const unread = getUnread();
   document.getElementById('chat-contacts').innerHTML = clientes.map(c=>{
     const ini = (c.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const lastMsg = (chatMsgs[c.id]||[]).slice(-1)[0];
     const preview = lastMsg?.texto||lastMsg?.text||(lastMsg?.tipo==='audio'||lastMsg?.tipo==='audioMessage'?'🎵 Áudio':lastMsg?.tipo==='image'||lastMsg?.tipo==='imageMessage'?'🖼️ Imagem':lastMsg?.tipo==='document'?'📎 Documento':'Toque para abrir');
-    const nl = unread[c.id]||0;
-    const badge = nl > 0 ? `<div style="min-width:20px;height:20px;background:#22c55e;color:#fff;border-radius:99px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px">${nl}</div>` : '';
-    const ativo = activeChatId===c.id ? 'active' : '';
-    const cid = c.id;
-    return `<div class="chat-item ${ativo}" onclick="abrirChat('${cid}')"><div class="cavatar">${ini}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:${nl>0?700:500}">${c.nome}</div><div style="font-size:11px;color:${nl>0?'var(--text)':'var(--muted)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">${preview}</div></div>${badge}</div>`;
+    return '<div class="chat-item '+(activeChatId===c.id?'active':'')+'" onclick="abrirChat(\''+c.id+'\')">'
+      +'<div class="cavatar">'+ini+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:13px;font-weight:500">'+c.nome+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'+preview+'</div>'
+      +'</div>'
+    +'</div>';
   }).join('')||'<div style="padding:16px;font-size:12px;color:var(--muted)">Sem contatos</div>';
 }
 
@@ -331,15 +311,15 @@ function filtrarContatos(){ renderChatContacts(); }
 
 function abrirChat(cid){
   activeChatId = cid;
-  clearUnread(cid);
-  atualizarBadgeNotif();
   const c = allClientes.find(x=>x.id===cid);
   if(!c){
     document.getElementById('chat-av').textContent = '?';
     document.getElementById('chat-av').style.background = 'rgba(139,139,139,0.2)';
     document.getElementById('chat-av').style.color = 'var(--muted)';
     document.getElementById('chat-name').textContent = 'Desconhecido';
-    document.getElementById('chat-info').textContent = cid+' · Clique em Perfil para cadastrar';
+    document.getElementById('chat-info').textContent = cid+' · Clique em Cadastrar para registrar';
+    const btnCad = document.getElementById('btn-cadastrar-chat');
+    if(btnCad) btnCad.style.display = 'flex';
     renderChatMsgs(cid);
     renderChatContacts();
     return;
@@ -350,6 +330,8 @@ function abrirChat(cid){
   document.getElementById('chat-av').style.color = 'var(--accent)';
   document.getElementById('chat-name').textContent = c.nome;
   document.getElementById('chat-info').textContent = c.telefone ? '📱 '+c.telefone : 'Sem telefone';
+  const btnCad = document.getElementById('btn-cadastrar-chat');
+  if(btnCad) btnCad.style.display = 'none';
   renderChatMsgs(cid);
   renderChatContacts();
 }
@@ -448,9 +430,6 @@ async function _enviarMidiaWpp(c){
     } else if(tipo==='audio'){
       endpoint = 'sendWhatsAppAudio';
       body = {number:num, audio:base64, encoding:true};
-    } else if(tipo==='video'){
-      endpoint = 'sendMedia';
-      body = {number:num, mediatype:'video', media:base64, fileName, caption:''};
     } else {
       endpoint = 'sendMedia';
       body = {number:num, mediatype:'document', media:base64, fileName, caption:''};
@@ -626,6 +605,81 @@ async function verPerfilCliente(){
       <button class="btn btn-ghost" style="flex:1" onclick="editarCliente('${c.id}');closeModal('perfil-cliente')">✏️ Editar</button>
       <button class="btn btn-primary" style="flex:1" onclick="closeModal('perfil-cliente')">💬 Fechar</button>
     </div>`;
+}
+
+
+// ── CADASTRAR CLIENTE PELO CHAT ──
+function abrirCadastroClienteChat(){
+  if(!activeChatId) return;
+  const num = activeChatId.includes('-') ? '' : activeChatId;
+  // Preenche o modal de cliente com o número
+  const tel = document.getElementById('mc-tel');
+  const nome = document.getElementById('mc-nome');
+  if(tel) tel.value = num.replace(/^55/,'');
+  if(nome) nome.focus();
+  // Callback após salvar — volta para o chat
+  window._afterSalvarCliente = async ()=>{
+    await loadClientes();
+    renderChatContacts();
+    const c = allClientes.find(x=>(x.telefone||'').replace(/\D/g,'').slice(-11) === num.slice(-11));
+    if(c){ activeChatId = c.id; abrirChat(c.id); }
+  };
+  openModal('cliente');
+}
+
+
+// ── RESPOSTAS RÁPIDAS EDITÁVEIS ──
+const RQ_KEY = 'fp_respostas_rapidas';
+const RQ_DEFAULT = [
+  'Olá! Como posso ajudar? 😊',
+  'Carros a partir de R$ 120/dia. Motos a partir de R$ 60/dia.',
+  'Preciso de CNH, CPF e comprovante de residência.',
+  'Posso gerar o contrato agora! Quando retira o veículo?',
+  'Devolução das 8h às 19h.',
+  'Veículo entregue! Obrigado pela preferência 🚗✅'
+];
+
+function getRespostasRapidas(){
+  try{ return JSON.parse(localStorage.getItem(RQ_KEY))||RQ_DEFAULT; }
+  catch(_){ return RQ_DEFAULT; }
+}
+
+function renderRespostasRapidas(){
+  const lista = getRespostasRapidas();
+  const el = document.getElementById('chat-respostas-rapidas');
+  if(!el) return;
+  el.innerHTML = lista.map((r,i)=>`
+    <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">
+      <div class="qr" style="flex:1;margin:0" onclick="setMsg(this.dataset.txt)" data-txt="${r.replace(/"/g,'&quot;')}">${r}</div>
+      <button onclick="editarResposta(${i})" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);padding:4px;flex-shrink:0">✏️</button>
+      <button onclick="excluirResposta(${i})" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--red);padding:4px;flex-shrink:0">✕</button>
+    </div>`).join('') +
+    `<button onclick="adicionarResposta()" style="width:100%;padding:6px;border:1px dashed var(--border2);background:transparent;border-radius:7px;cursor:pointer;font-size:12px;color:var(--muted);margin-top:4px">+ Adicionar resposta</button>`;
+}
+
+function editarResposta(idx){
+  const lista = getRespostasRapidas();
+  const nova = prompt('Editar resposta:', lista[idx]);
+  if(nova === null) return;
+  lista[idx] = nova.trim()||lista[idx];
+  localStorage.setItem(RQ_KEY, JSON.stringify(lista));
+  renderRespostasRapidas();
+}
+
+function excluirResposta(idx){
+  const lista = getRespostasRapidas();
+  lista.splice(idx,1);
+  localStorage.setItem(RQ_KEY, JSON.stringify(lista));
+  renderRespostasRapidas();
+}
+
+function adicionarResposta(){
+  const nova = prompt('Nova resposta rápida:');
+  if(!nova?.trim()) return;
+  const lista = getRespostasRapidas();
+  lista.push(nova.trim());
+  localStorage.setItem(RQ_KEY, JSON.stringify(lista));
+  renderRespostasRapidas();
 }
 
 function setMsg(t){ const i=document.getElementById('chat-msg-input'); if(i){i.value=t;i.focus();} }
