@@ -6,6 +6,19 @@ let wppOk = false;
 let sseSource = null;
 const EVO_CFG_KEY = 'fp_evo_cfg';
 
+// ══ MENSAGENS NÃO LIDAS ══
+const UNREAD_KEY = 'fp_unread';
+function getUnread(){ try{ return JSON.parse(localStorage.getItem(UNREAD_KEY)||'{}'); }catch(_){ return {}; } }
+function incrementUnread(cid){ const u=getUnread(); u[cid]=(u[cid]||0)+1; localStorage.setItem(UNREAD_KEY,JSON.stringify(u)); }
+function clearUnread(cid){ const u=getUnread(); delete u[cid]; localStorage.setItem(UNREAD_KEY,JSON.stringify(u)); }
+function totalUnread(){ return Object.values(getUnread()).reduce((a,b)=>a+b,0); }
+function atualizarBadgeNotif(){
+  const total=totalUnread();
+  const dot=document.querySelector('.notif-dot');
+  if(dot) dot.style.display=total>0?'block':'none';
+  document.title=total>0?`(${total}) FleetPro | Plataforma de Locadoras`:'FleetPro | Plataforma de Locadoras';
+}
+
 function fmtPhone(tel){
   if(!tel) return '';
   let n = tel.replace(/\D/g,'');
@@ -79,7 +92,9 @@ function receberMsgSSE(msg){
     }
   }
 
+  if(!estaAberta) incrementUnread(cid);
   if(allClientes && allClientes.length > 0) renderChatContacts();
+  atualizarBadgeNotif();
   const nome = msg.nomeCliente||msg.numero||'Desconhecido';
   const prev = msg.texto ? msg.texto.slice(0,40) : '(mídia)';
   notify('💬 '+nome+': '+prev,'success');
@@ -305,13 +320,9 @@ function renderChatContacts(){
     const ini = (c.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const lastMsg = (chatMsgs[c.id]||[]).slice(-1)[0];
     const preview = lastMsg?.texto||lastMsg?.text||(lastMsg?.tipo==='audio'||lastMsg?.tipo==='audioMessage'?'🎵 Áudio':lastMsg?.tipo==='image'||lastMsg?.tipo==='imageMessage'?'🖼️ Imagem':lastMsg?.tipo==='document'?'📎 Documento':'Toque para abrir');
-    return '<div class="chat-item '+(activeChatId===c.id?'active':'')+'" onclick="abrirChat(\''+c.id+'\')">'
-      +'<div class="cavatar">'+ini+'</div>'
-      +'<div style="flex:1;min-width:0">'
-        +'<div style="font-size:13px;font-weight:500">'+c.nome+'</div>'
-        +'<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'+preview+'</div>'
-      +'</div>'
-    +'</div>';
+    const nl=(getUnread()[c.id]||0);
+    const badge=nl>0?'<div style="min-width:20px;height:20px;background:#22c55e;color:#fff;border-radius:99px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px">'+nl+'</div>':'';
+    return '<div class="chat-item '+(activeChatId===c.id?'active':'')+" onclick=\"abrirChat(\'"+c.id+"\')\">"      +'<div class="cavatar">'+ini+'</div>'      +'<div style="flex:1;min-width:0">'        +'<div style="font-size:13px;font-weight:'+(nl>0?700:500)+'">'+c.nome+'</div>'        +'<div style="font-size:11px;color:'+(nl>0?'var(--text)':'var(--muted)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'+preview+'</div>'      +'</div>'      +badge    +'</div>';
   }).join('')||'<div style="padding:16px;font-size:12px;color:var(--muted)">Sem contatos</div>';
 }
 
@@ -319,6 +330,8 @@ function filtrarContatos(){ renderChatContacts(); }
 
 function abrirChat(cid){
   activeChatId = cid;
+  clearUnread(cid);
+  atualizarBadgeNotif();
   const c = allClientes.find(x=>x.id===cid);
   if(!c){
     document.getElementById('chat-av').textContent = '?';
