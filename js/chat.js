@@ -118,7 +118,6 @@ async function conectarWpp(){
 }
 
 function preencherCamposWpp(){
-  setTimeout(renderRespostasRapidas, 300);
   const cfg = JSON.parse(localStorage.getItem(EVO_CFG_KEY)||'{}');
   const set = (id, val)=>{ const e=document.getElementById(id); if(e&&val) e.value=val; };
   set('wpp-url',    cfg.apiUrl);
@@ -317,9 +316,7 @@ function abrirChat(cid){
     document.getElementById('chat-av').style.background = 'rgba(139,139,139,0.2)';
     document.getElementById('chat-av').style.color = 'var(--muted)';
     document.getElementById('chat-name').textContent = 'Desconhecido';
-    document.getElementById('chat-info').textContent = cid+' · Clique em Cadastrar para registrar';
-    const btnCad = document.getElementById('btn-cadastrar-chat');
-    if(btnCad) btnCad.style.display = 'flex';
+    document.getElementById('chat-info').textContent = cid+' · Clique em Perfil para cadastrar';
     renderChatMsgs(cid);
     renderChatContacts();
     return;
@@ -330,8 +327,6 @@ function abrirChat(cid){
   document.getElementById('chat-av').style.color = 'var(--accent)';
   document.getElementById('chat-name').textContent = c.nome;
   document.getElementById('chat-info').textContent = c.telefone ? '📱 '+c.telefone : 'Sem telefone';
-  const btnCad = document.getElementById('btn-cadastrar-chat');
-  if(btnCad) btnCad.style.display = 'none';
   renderChatMsgs(cid);
   renderChatContacts();
 }
@@ -570,12 +565,8 @@ async function verPerfilCliente(){
   if(!activeChatId){ notify('Selecione um contato','error'); return; }
   const c = allClientes.find(x=>x.id===activeChatId);
   if(!c){ notify('Cadastre o cliente para ver o perfil','error'); return; }
-  // Usa o modal existente de perfil do cliente (clientes.js)
-  await _renderPerfilCliente(c);
-  return;
-  // código legado abaixo mantido como fallback
-  const body = document.getElementById('perfil-cliente-body');
-  if(!body){ notify('Modal de perfil não encontrado','error'); return; }
+  document.getElementById('perfil-cli-titulo').textContent = '👤 '+c.nome;
+  const body = document.getElementById('perfil-cli-body');
   body.innerHTML = '<div style="padding:16px;color:var(--muted2);font-size:13px">⏳ Carregando...</div>';
   document.getElementById('m-perfil-cliente').classList.add('show');
   const {data:locs} = await sb.from('locacoes')
@@ -609,81 +600,6 @@ async function verPerfilCliente(){
       <button class="btn btn-ghost" style="flex:1" onclick="editarCliente('${c.id}');closeModal('perfil-cliente')">✏️ Editar</button>
       <button class="btn btn-primary" style="flex:1" onclick="closeModal('perfil-cliente')">💬 Fechar</button>
     </div>`;
-}
-
-
-// ── CADASTRAR CLIENTE PELO CHAT ──
-function abrirCadastroClienteChat(){
-  if(!activeChatId) return;
-  const num = activeChatId.includes('-') ? '' : activeChatId;
-  // Preenche o modal de cliente com o número
-  const tel = document.getElementById('mc-tel');
-  const nome = document.getElementById('mc-nome');
-  if(tel) tel.value = num.replace(/^55/,'');
-  if(nome) nome.focus();
-  // Callback após salvar — volta para o chat
-  window._afterSalvarCliente = async ()=>{
-    await loadClientes();
-    renderChatContacts();
-    const c = allClientes.find(x=>(x.telefone||'').replace(/\D/g,'').slice(-11) === num.slice(-11));
-    if(c){ activeChatId = c.id; abrirChat(c.id); }
-  };
-  openModal('cliente');
-}
-
-
-// ── RESPOSTAS RÁPIDAS EDITÁVEIS ──
-const RQ_KEY = 'fp_respostas_rapidas';
-const RQ_DEFAULT = [
-  'Olá! Como posso ajudar? 😊',
-  'Carros a partir de R$ 120/dia. Motos a partir de R$ 60/dia.',
-  'Preciso de CNH, CPF e comprovante de residência.',
-  'Posso gerar o contrato agora! Quando retira o veículo?',
-  'Devolução das 8h às 19h.',
-  'Veículo entregue! Obrigado pela preferência 🚗✅'
-];
-
-function getRespostasRapidas(){
-  try{ return JSON.parse(localStorage.getItem(RQ_KEY))||RQ_DEFAULT; }
-  catch(_){ return RQ_DEFAULT; }
-}
-
-function renderRespostasRapidas(){
-  const lista = getRespostasRapidas();
-  const el = document.getElementById('chat-respostas-rapidas');
-  if(!el) return;
-  el.innerHTML = lista.map((r,i)=>`
-    <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">
-      <div class="qr" style="flex:1;margin:0" onclick="setMsg(this.dataset.txt)" data-txt="${r.replace(/"/g,'&quot;')}">${r}</div>
-      <button onclick="editarResposta(${i})" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);padding:4px;flex-shrink:0">✏️</button>
-      <button onclick="excluirResposta(${i})" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--red);padding:4px;flex-shrink:0">✕</button>
-    </div>`).join('') +
-    `<button onclick="adicionarResposta()" style="width:100%;padding:6px;border:1px dashed var(--border2);background:transparent;border-radius:7px;cursor:pointer;font-size:12px;color:var(--muted);margin-top:4px">+ Adicionar resposta</button>`;
-}
-
-function editarResposta(idx){
-  const lista = getRespostasRapidas();
-  const nova = prompt('Editar resposta:', lista[idx]);
-  if(nova === null) return;
-  lista[idx] = nova.trim()||lista[idx];
-  localStorage.setItem(RQ_KEY, JSON.stringify(lista));
-  renderRespostasRapidas();
-}
-
-function excluirResposta(idx){
-  const lista = getRespostasRapidas();
-  lista.splice(idx,1);
-  localStorage.setItem(RQ_KEY, JSON.stringify(lista));
-  renderRespostasRapidas();
-}
-
-function adicionarResposta(){
-  const nova = prompt('Nova resposta rápida:');
-  if(!nova?.trim()) return;
-  const lista = getRespostasRapidas();
-  lista.push(nova.trim());
-  localStorage.setItem(RQ_KEY, JSON.stringify(lista));
-  renderRespostasRapidas();
 }
 
 function setMsg(t){ const i=document.getElementById('chat-msg-input'); if(i){i.value=t;i.focus();} }
@@ -738,38 +654,14 @@ Essa ação não pode ser desfeita.`)) return;
 }
 
 // ══ INVESTIDORES ══
+const VALOR_MOTO     = 20000;  // R$ por moto
+const RENDIMENTO_MES = 825;    // R$ por moto por mês
+
 function renderInvestidores(){
   const el = document.getElementById('page-investidores');
+  if(!el) return;
   const isAdmin = currentPerfil?.perfil === 'admin';
   const isInv   = currentPerfil?.perfil === 'investidor';
-
-  // Filtra veículos do investidor logado (ou todos se admin)
-  const meusVeiculos = isInv
-    ? allVeiculos.filter(v => v.investidor_id === currentUser?.id)
-    : allVeiculos;
-
-  const meusLocIds = new Set(meusVeiculos.map(v=>v.id));
-  const meusLocs = isInv
-    ? allLocacoes.filter(l => meusLocIds.has(l.veiculo_id))
-    : allLocacoes;
-
-  const meusMantIds = new Set(meusVeiculos.map(v=>v.id));
-  const meusManut = isInv
-    ? allManutencoes.filter(m => meusMantIds.has(m.veiculo_id))
-    : allManutencoes;
-
-  // Receita do mês
-  const receitaMes = meusLocs.reduce((acc,l)=>{
-    const dias = Math.min(30,Math.ceil((new Date(l.data_fim)-new Date(l.data_inicio))/86400000));
-    return acc+(l.diaria||0)*Math.max(0,dias);
-  },0);
-
-  // Custo manutenções
-  const custoManut = meusManut.reduce((acc,m)=>acc+(m.custo||0),0);
-
-  const ocupacao = meusVeiculos.length
-    ? Math.round(meusVeiculos.filter(v=>v.status==='alugado').length/meusVeiculos.length*100)
-    : 0;
 
   // Selector de investidor (só admin vê)
   const selectorHtml = isAdmin ? `
@@ -781,67 +673,112 @@ function renderInvestidores(){
       </select>
     </div>` : '';
 
-  // Se admin selecionou um investidor específico
-  let veiculosFinal = meusVeiculos;
-  let locsFinal = meusLocs;
-  let manutFinal = meusManut;
+  // Determinar veículos do investidor
+  let veiculosFinal, locsFinal, manutFinal;
   if(isAdmin){
     const sel = document.getElementById('inv-selector')?.value || '';
-    if(sel){
-      veiculosFinal = allVeiculos.filter(v=>v.investidor_id===sel);
-      const ids = new Set(veiculosFinal.map(v=>v.id));
-      locsFinal = allLocacoes.filter(l=>ids.has(l.veiculo_id));
-      manutFinal = allManutencoes.filter(m=>ids.has(m.veiculo_id));
-    }
+    veiculosFinal = sel ? allVeiculos.filter(v=>v.investidor_id===sel) : allVeiculos;
+  } else {
+    veiculosFinal = allVeiculos.filter(v=>v.investidor_id===currentUser?.id);
   }
+  const ids = new Set(veiculosFinal.map(v=>v.id));
+  locsFinal  = allLocacoes.filter(l=>ids.has(l.veiculo_id));
+  manutFinal = allManutencoes.filter(m=>ids.has(m.veiculo_id));
 
-  const receitaFinal = locsFinal.reduce((acc,l)=>{
-    const dias = Math.min(30,Math.ceil((new Date(l.data_fim)-new Date(l.data_inicio))/86400000));
-    return acc+(l.diaria||0)*Math.max(0,dias);
-  },0);
-  const custoFinal = manutFinal.reduce((acc,m)=>acc+(m.custo||0),0);
-  const ocupFinal = veiculosFinal.length
-    ? Math.round(veiculosFinal.filter(v=>v.status==='alugado').length/veiculosFinal.length*100) : 0;
+  // ── Cálculos financeiros ──
+  const qtdMotos       = veiculosFinal.filter(v=>v.tipo==='moto').length;
+  const qtdCarros      = veiculosFinal.filter(v=>v.tipo==='carro').length;
+  const totalVeiculos  = veiculosFinal.length;
+  const investimento   = qtdMotos * VALOR_MOTO;
+  const rendMensal     = qtdMotos * RENDIMENTO_MES;
+  const rendAnual      = rendMensal * 12;
+  const rentabilidade  = investimento > 0 ? ((rendMensal / investimento) * 100).toFixed(2) : '0.00';
+  const custoManut     = manutFinal.reduce((acc,m)=>acc+(m.custo||0),0);
+  const ocupFinal      = totalVeiculos > 0
+    ? Math.round(veiculosFinal.filter(v=>v.status==='alugado').length/totalVeiculos*100) : 0;
 
   el.innerHTML = selectorHtml + `
-  <div class="stats-grid">
-    <div class="stat-card" style="--accent-color:var(--green)">
-      <div class="stat-icon">💰</div><div class="stat-label">Receita estimada/mês</div>
-      <div class="stat-val" style="color:var(--green)">R$ ${receitaFinal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-      <div class="stat-sub">${locsFinal.length} locações</div>
+
+  <!-- CARDS FINANCEIROS -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+    <div class="stat-card" style="--accent-color:#7c3aed">
+      <div class="stat-icon">💼</div>
+      <div class="stat-label">Capital investido</div>
+      <div class="stat-val" style="color:#7c3aed;font-size:22px">R$ ${investimento.toLocaleString('pt-BR')}</div>
+      <div class="stat-sub">${qtdMotos} moto${qtdMotos!==1?'s':''} × R$ ${VALOR_MOTO.toLocaleString('pt-BR')}</div>
     </div>
-    <div class="stat-card" style="--accent-color:var(--blue)">
-      <div class="stat-icon">🚗</div><div class="stat-label">Veículos na carteira</div>
-      <div class="stat-val" style="color:var(--blue)">${veiculosFinal.length}</div>
-      <div class="stat-sub">${veiculosFinal.filter(v=>v.status==='disponivel').length} disponíveis · ${ocupFinal}% ocupação</div>
+    <div class="stat-card" style="--accent-color:#16a34a">
+      <div class="stat-icon">💰</div>
+      <div class="stat-label">Rendimento mensal</div>
+      <div class="stat-val" style="color:#16a34a;font-size:22px">R$ ${rendMensal.toLocaleString('pt-BR')}</div>
+      <div class="stat-sub">${qtdMotos} moto${qtdMotos!==1?'s':''} × R$ ${RENDIMENTO_MES}/mês</div>
     </div>
-    <div class="stat-card" style="--accent-color:var(--red)">
-      <div class="stat-icon">🔧</div><div class="stat-label">Custo em manutenções</div>
-      <div class="stat-val" style="color:var(--red)">R$ ${custoFinal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-      <div class="stat-sub">${manutFinal.length} registros</div>
+    <div class="stat-card" style="--accent-color:#2563EB">
+      <div class="stat-icon">📅</div>
+      <div class="stat-label">Rendimento anual</div>
+      <div class="stat-val" style="color:#2563EB;font-size:22px">R$ ${rendAnual.toLocaleString('pt-BR')}</div>
+      <div class="stat-sub">${rendMensal.toLocaleString('pt-BR')}/mês × 12</div>
     </div>
-    <div class="stat-card" style="--accent-color:var(--purple)">
-      <div class="stat-icon">📈</div><div class="stat-label">Lucro estimado/mês</div>
-      <div class="stat-val" style="color:var(--purple)">R$ ${Math.max(0,receitaFinal-custoFinal).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-      <div class="stat-sub">receita − manutenções</div>
+    <div class="stat-card" style="--accent-color:#0891b2">
+      <div class="stat-icon">📈</div>
+      <div class="stat-label">Rentabilidade</div>
+      <div class="stat-val" style="color:#0891b2;font-size:22px">${rentabilidade}%</div>
+      <div class="stat-sub">ao mês sobre o capital</div>
     </div>
   </div>
 
-  <div class="card" style="margin-top:20px">
-    <div class="card-header"><span class="card-title">🚗 Meus veículos</span></div>
+  <!-- CARDS OPERACIONAIS -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+    <div class="stat-card" style="--accent-color:#7c3aed">
+      <div class="stat-icon">🏍️</div>
+      <div class="stat-label">Motos na carteira</div>
+      <div class="stat-val" style="color:#7c3aed">${qtdMotos}</div>
+      <div class="stat-sub">${veiculosFinal.filter(v=>v.tipo==='moto'&&v.status==='alugado').length} alugadas · ${veiculosFinal.filter(v=>v.tipo==='moto'&&v.status==='disponivel').length} disponíveis</div>
+    </div>
+    <div class="stat-card" style="--accent-color:#2563EB">
+      <div class="stat-icon">📊</div>
+      <div class="stat-label">Taxa de ocupação</div>
+      <div class="stat-val" style="color:#2563EB">${ocupFinal}%</div>
+      <div class="stat-sub">${veiculosFinal.filter(v=>v.status==='alugado').length} de ${totalVeiculos} veículos alugados</div>
+    </div>
+    <div class="stat-card" style="--accent-color:#dc2626">
+      <div class="stat-icon">🔧</div>
+      <div class="stat-label">Custo manutenções</div>
+      <div class="stat-val" style="color:#dc2626;font-size:22px">R$ ${custoManut.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+      <div class="stat-sub">${manutFinal.length} registro${manutFinal.length!==1?'s':''}</div>
+    </div>
+  </div>
+
+  <!-- PROJEÇÃO -->
+  <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,rgba(37,99,235,.06),rgba(124,58,237,.06));border:1px solid rgba(37,99,235,.15)">
+    <div class="card-header"><span class="card-title">📊 Projeção de rendimentos</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:4px">
+      ${[1,3,6,12].map(m=>`
+        <div style="text-align:center;padding:12px;background:rgba(255,255,255,0.6);border-radius:10px;border:1px solid rgba(37,99,235,.1)">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">${m} ${m===1?'mês':'meses'}</div>
+          <div style="font-size:18px;font-weight:800;color:#2563EB;margin:6px 0">R$ ${(rendMensal*m).toLocaleString('pt-BR')}</div>
+          <div style="font-size:10px;color:var(--muted2)">${((rendMensal*m/investimento)*100).toFixed(1)}% do capital</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- TABELA DE VEÍCULOS -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">🏍️ Meus veículos</span></div>
     <table><thead><tr><th>Veículo</th><th>Placa</th><th>Tipo</th><th>Diária</th><th>Status</th></tr></thead>
     <tbody>${veiculosFinal.length ? veiculosFinal.map(v=>`
       <tr>
         <td><div style="font-weight:500">${v.marca} ${v.modelo}</div><div style="font-size:11px;color:var(--muted)">${v.ano||''} · ${v.cor||''}</div></td>
         <td>${v.placa}</td>
-        <td>${v.tipo==='carro'?'🚗 Carro':'🏍️ Moto'}</td>
+        <td>${v.tipo==='moto'?'🏍️ Moto':'🚗 Carro'}</td>
         <td style="color:var(--accent);font-weight:600">R$ ${(v.diaria||0).toFixed(2)}</td>
         <td>${statusBadge(v.status)}</td>
       </tr>`).join('') : '<tr class="empty-row"><td colspan="5">Nenhum veículo na carteira</td></tr>'}
     </tbody></table>
   </div>
 
-  <div class="card" style="margin-top:20px">
+  <!-- HISTÓRICO DE LOCAÇÕES -->
+  <div class="card" style="margin-bottom:20px">
     <div class="card-header"><span class="card-title">📋 Histórico de locações</span></div>
     <table><thead><tr><th>Veículo</th><th>Cliente</th><th>Período</th><th>Total</th><th>Status</th></tr></thead>
     <tbody>${locsFinal.length ? locsFinal.map(l=>`
@@ -855,7 +792,8 @@ function renderInvestidores(){
     </tbody></table>
   </div>
 
-  <div class="card" style="margin-top:20px">
+  <!-- MANUTENÇÕES -->
+  <div class="card">
     <div class="card-header"><span class="card-title">🔧 Manutenções</span></div>
     <table><thead><tr><th>Veículo</th><th>Serviço</th><th>Custo</th><th>Status</th></tr></thead>
     <tbody>${manutFinal.length ? manutFinal.map(m=>`
