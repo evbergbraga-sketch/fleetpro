@@ -346,29 +346,8 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
             <div style="margin-bottom:14px">
               <div class="cst" style="display:flex;justify-content:space-between;align-items:center">
                 Respostas rápidas
-                <span style="font-size:10px;color:var(--accent);cursor:pointer;font-weight:500" onclick="gerenciarRespostas()">✏️ editar</span>
               </div>
               <div id="chat-respostas-rapidas"></div>
-              <script>
-              (function(){
-                const RQ_KEY='fp_rq';
-                const DEF=['Olá! Como posso ajudar? 😊','Carros a partir de R$ 120/dia. Motos a partir de R$ 60/dia.','Preciso de CNH, CPF e comprovante de residência.','Posso gerar o contrato agora! Quando retira o veículo?','Devolução das 8h às 19h.','Veículo entregue! Obrigado pela preferência 🚗✅'];
-                function getRQ(){ try{ return JSON.parse(localStorage.getItem(RQ_KEY))||DEF; }catch(_){ return DEF; } }
-                function renderRQ(){
-                  const el=document.getElementById('chat-respostas-rapidas'); if(!el) return;
-                  el.innerHTML=getRQ().map(r=>`<div class="qr" onclick="setMsg(this.dataset.t)" data-t="${r.replace(/"/g,'&quot;')}">${r}</div>`).join('');
-                }
-                window.gerenciarRespostas=function(){
-                  const lista=getRQ();
-                  const nova=prompt('Edite as respostas (uma por linha):\n\nDica: adicione ou remova linhas para personalizar.', lista.join('\n'));
-                  if(nova===null) return;
-                  const novas=nova.split('\n').map(s=>s.trim()).filter(Boolean);
-                  localStorage.setItem(RQ_KEY,JSON.stringify(novas));
-                  renderRQ();
-                };
-                document.addEventListener('DOMContentLoaded', ()=>setTimeout(renderRQ,800));
-              })();
-              </script>
             </div>
             <div><div class="cst">Assinatura</div>
               <div class="form-group" style="margin-bottom:8px"><label>Nome da locadora</label><input type="text" id="wpp-nome-locadora" value="FleetPro Locadora" style="width:100%;font-size:12px"></div>
@@ -556,6 +535,83 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
   </div>
 </div>
 
+
+
+<!-- MODAL RESPOSTAS RÁPIDAS -->
+<div class="modal-overlay" id="m-respostas-rapidas">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Respostas rápidas</div>
+      <button class="modal-close" onclick="closeModal('respostas-rapidas')">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Clique em uma resposta para editar ou excluir. Use o campo abaixo para adicionar novas.</div>
+    <div id="rq-lista" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="rq-nova" placeholder="Nova resposta rápida..." style="flex:1" onkeydown="if(event.key==='Enter') adicionarRQ()">
+      <button class="btn btn-primary" onclick="adicionarRQ()">+ Adicionar</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('respostas-rapidas')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const RQ_KEY = 'fp_rq';
+  const DEF = ['Olá! Como posso ajudar? 😊','Carros a partir de R$ 120/dia. Motos a partir de R$ 60/dia.','Preciso de CNH, CPF e comprovante de residência.','Posso gerar o contrato agora! Quando retira o veículo?','Devolução das 8h às 19h.','Veículo entregue! Obrigado pela preferência 🚗✅'];
+  
+  function getRQ(){ try{ return JSON.parse(localStorage.getItem(RQ_KEY))||DEF; }catch(_){ return DEF; } }
+  function saveRQ(lista){ localStorage.setItem(RQ_KEY, JSON.stringify(lista)); }
+
+  window.renderRQ = function(){
+    const el = document.getElementById('chat-respostas-rapidas'); if(!el) return;
+    el.innerHTML = getRQ().map(r=>`<div class="qr" onclick="setMsg(this.dataset.t)" data-t="${r.replace(/"/g,'&quot;')}">${r}</div>`).join('');
+  };
+
+  window.gerenciarRespostas = function(){
+    const lista = getRQ();
+    const el = document.getElementById('rq-lista'); if(!el) return;
+    el.innerHTML = lista.map((r,i)=>`
+      <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg2);border-radius:8px;border:1px solid var(--border2)">
+        <div style="flex:1;font-size:13px;cursor:pointer" onclick="editarRQ(${i})" title="Clique para editar">${r}</div>
+        <button onclick="excluirRQ(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 6px;flex-shrink:0">✕</button>
+      </div>`).join('');
+    document.getElementById('m-respostas-rapidas').classList.add('show');
+  };
+
+  window.editarRQ = function(idx){
+    const lista = getRQ();
+    const nova = prompt('Editar resposta:', lista[idx]);
+    if(nova === null || !nova.trim()) return;
+    lista[idx] = nova.trim();
+    saveRQ(lista);
+    renderRQ();
+    gerenciarRespostas();
+  };
+
+  window.excluirRQ = function(idx){
+    const lista = getRQ();
+    lista.splice(idx, 1);
+    saveRQ(lista);
+    renderRQ();
+    gerenciarRespostas();
+  };
+
+  window.adicionarRQ = function(){
+    const inp = document.getElementById('rq-nova');
+    const txt = inp?.value.trim(); if(!txt) return;
+    const lista = getRQ();
+    lista.push(txt);
+    saveRQ(lista);
+    inp.value = '';
+    renderRQ();
+    gerenciarRespostas();
+  };
+
+  document.addEventListener('DOMContentLoaded', ()=>setTimeout(window.renderRQ, 800));
+})();
+</script>
 
 </body>
 </html>
