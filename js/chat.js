@@ -316,16 +316,17 @@ function renderChatContacts(){
   });
   const desconhecidos = Object.values(desconhecidosMap);
   const clientes = [...allClientes, ...desconhecidos].filter(c=>!s||c.nome.toLowerCase().includes(s)||(c.telefone||'').includes(s));
+  const unread = getUnread();
   document.getElementById('chat-contacts').innerHTML = clientes.map(c=>{
     const ini = (c.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const lastMsg = (chatMsgs[c.id]||[]).slice(-1)[0];
     const preview = lastMsg?.texto||lastMsg?.text||(lastMsg?.tipo==='audio'||lastMsg?.tipo==='audioMessage'?'🎵 Áudio':lastMsg?.tipo==='image'||lastMsg?.tipo==='imageMessage'?'🖼️ Imagem':lastMsg?.tipo==='document'?'📎 Documento':'Toque para abrir');
-    const nl=(getUnread()[c.id]||0);
-    const badge=nl>0?'<div style="min-width:20px;height:20px;background:#22c55e;color:#fff;border-radius:99px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px">'+nl+'</div>':'';
-    return '<div class="chat-item '+(activeChatId===c.id?'active':'')+" onclick=\"abrirChat(\'"+c.id+"\')\">"      +'<div class="cavatar">'+ini+'</div>'      +'<div style="flex:1;min-width:0">'        +'<div style="font-size:13px;font-weight:'+(nl>0?700:500)+'">'+c.nome+'</div>'        +'<div style="font-size:11px;color:'+(nl>0?'var(--text)':'var(--muted)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'+preview+'</div>'      +'</div>'      +badge    +'</div>';
+    const nl = unread[c.id]||0;
+    const badge = nl>0?`<div style="min-width:20px;height:20px;background:#22c55e;color:#fff;border-radius:99px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px">${nl}</div>`:'';
+    const ativo = activeChatId===c.id?'active':'';
+    return `<div class="chat-item ${ativo}" onclick="abrirChat('${c.id}')"><div class="cavatar">${ini}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:${nl>0?700:500}">${c.nome}</div><div style="font-size:11px;color:${nl>0?'var(--text)':'var(--muted)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">${preview}</div></div>${badge}</div>`;
   }).join('')||'<div style="padding:16px;font-size:12px;color:var(--muted)">Sem contatos</div>';
 }
-
 function filtrarContatos(){ renderChatContacts(); }
 
 function abrirChat(cid){
@@ -587,10 +588,8 @@ async function verPerfilCliente(){
   if(!activeChatId){ notify('Selecione um contato','error'); return; }
   const c = allClientes.find(x=>x.id===activeChatId);
   if(!c){ notify('Cadastre o cliente para ver o perfil','error'); return; }
-  document.getElementById('perfil-cli-titulo').textContent = '👤 '+c.nome;
-  const body = document.getElementById('perfil-cli-body');
-  body.innerHTML = '<div style="padding:16px;color:var(--muted2);font-size:13px">⏳ Carregando...</div>';
-  document.getElementById('m-perfil-cliente').classList.add('show');
+  await _renderPerfilCliente(c);
+  return;
   const {data:locs} = await sb.from('locacoes')
     .select('*,veiculos(marca,modelo,placa)')
     .eq('cliente_id',c.id)
