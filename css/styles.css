@@ -279,3 +279,84 @@ label{font-size:12px;color:var(--muted);margin-bottom:4px;display:block;}
 .search-item:hover{background:var(--bg2);}
 .search-item:last-child{border:none;}
 .search-tag{font-size:10px;color:var(--muted);background:var(--bg3);padding:2px 7px;border-radius:99px;}
+
+/* ══════════════════════════════════════════
+   RESPONSIVIDADE MOBILE
+══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  body { overflow: auto; height: auto; }
+
+  /* ── Login: esconde coluna esquerda, mostra só o form ── */
+  .login-wrap {
+    grid-template-columns: 1fr;
+    width: 100%;
+    min-height: 100vh;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+  .login-left { display: none; }
+  .login-right {
+    padding: 60px 28px 48px;
+    min-height: 100vh;
+    justify-content: center;
+  }
+
+  /* ── Setup ── */
+  .setup-box {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding: 32px 20px;
+  }
+
+  /* ── App shell ── */
+  #layer-app { overflow: auto; }
+
+  /* Sidebar: escondida fora da tela, abre via .open */
+  .sidebar {
+    position: fixed;
+    left: -100%;
+    z-index: 100;
+    transition: left .25s;
+    height: 100%;
+    box-shadow: 4px 0 24px rgba(0,0,0,.4);
+  }
+  .sidebar.open { left: 0; }
+
+  /* Main ocupa tela inteira */
+  .main { width: 100%; }
+
+  /* Topbar compacta */
+  .topbar { padding: 10px 14px; gap: 8px; }
+  .topbar-search { min-width: 0; flex: 1; }
+  .topbar-search input { width: 100%; }
+  .page-title { font-size: 15px; }
+
+  /* Content sem padding excessivo */
+  .content { padding: 14px 12px; }
+
+  /* Stats em 2 colunas */
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
+  .stat-val { font-size: 22px; }
+  .grid2 { grid-template-columns: 1fr; }
+
+  /* Tabelas com scroll horizontal */
+  .card { overflow-x: auto; padding: 14px; }
+  table { min-width: 460px; }
+
+  /* Modais full width */
+  .modal {
+    width: calc(100vw - 24px);
+    max-height: 92vh;
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-group.full { grid-column: 1; }
+  .modal-footer { flex-direction: column-reverse; }
+  .modal-footer .btn { width: 100%; justify-content: center; }
+}
