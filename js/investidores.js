@@ -48,6 +48,9 @@ function _injectInvCss(){
     body.inv-active .content {
       background: ${INV_THEME.bg} !important;
       padding: 0 !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      -webkit-overflow-scrolling: touch;
     }
     body.inv-active #page-investidores {
       display: block;
