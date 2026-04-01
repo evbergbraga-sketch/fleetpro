@@ -2,7 +2,7 @@
 
 // ══ CREDENCIAIS HARDCODADAS (chave anon é pública por design) ══
 const FP_URL = 'https://jjeogfafgbexgxqhubha.supabase.co';
-const FP_KEY = 'COLE_SUA_CHAVE_ANON_AQUI';
+const FP_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqZW9nZmFmZ2JleGd4cWh1YmhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzOTA1MzUsImV4cCI6MjA4OTk2NjUzNX0.Y8ZrP5kM8dySPaWvWELAPgXAFaAo9iN7ucKKEQzc_DE';
 
 window.addEventListener('DOMContentLoaded', async()=>{
   // Tenta pegar do localStorage (usuário que já configurou manualmente)
