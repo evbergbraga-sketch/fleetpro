@@ -549,6 +549,23 @@ async function excluirPagamento(id){
 
 // ══ MEUS VEÍCULOS ══
 function _renderInvVeiculos(veiculosFinal){
+  // Cache global para o modal acessar sem JSON inline
+  window._invVCache = veiculosFinal;
+
+  const rows = veiculosFinal.length
+    ? veiculosFinal.map((v,i)=>`
+          <tr style="cursor:pointer" onclick="_abrirModalVeiculoInv(${i})" title="Ver detalhes">
+            <td>
+              <div style="font-weight:600;color:#fff">${v.marca} ${v.modelo}</div>
+              <div style="font-size:11px;color:#555">${v.ano||''} · ${v.cor||''}</div>
+            </td>
+            <td style="font-family:monospace;color:${INV_THEME.green};font-weight:600;white-space:nowrap">${v.placa}</td>
+            <td>${v.status==='alugado'?'<span class="inv-badge-green">Alugado</span>':'<span class="inv-badge-gray">Disponível</span>'}</td>
+            <td style="color:#aaa">${v.seguradora||'<span style="color:#333">—</span>'}</td>
+            <td style="color:#aaa">${v.apolice||'<span style="color:#333">—</span>'}</td>
+          </tr>`).join('')
+    : `<tr><td colspan="5" class="inv-empty">Nenhum veículo na carteira.</td></tr>`;
+
   return `
   <div class="inv-card">
     <div class="inv-card-header">
@@ -560,23 +577,17 @@ function _renderInvVeiculos(veiculosFinal){
         <thead>
           <tr><th>Veículo</th><th>Placa</th><th>Status</th><th>Seguradora</th><th>Apólice</th></tr>
         </thead>
-        <tbody>
-          ${veiculosFinal.length ? veiculosFinal.map(v=>`
-          <tr>
-            <td>
-              <div style="font-weight:600;color:#fff">${v.marca} ${v.modelo}</div>
-              <div style="font-size:11px;color:#555">${v.ano||''} · ${v.cor||''}</div>
-            </td>
-            <td style="font-family:monospace;color:${INV_THEME.green};font-weight:600;white-space:nowrap">${v.placa}</td>
-            <td>${v.status==='alugado'?'<span class="inv-badge-green">Alugado</span>':'<span class="inv-badge-gray">Disponível</span>'}</td>
-            <td style="color:#aaa">${v.seguradora||'<span style="color:#333">—</span>'}</td>
-            <td style="color:#aaa">${v.apolice||'<span style="color:#333">—</span>'}</td>
-          </tr>`).join('') : `<tr><td colspan="5" class="inv-empty">Nenhum veículo na carteira.</td></tr>`}
-        </tbody>
+        <tbody>${rows}</tbody>
       </table>
     </div>
+  </div>
+
+  <!-- MODAL VEÍCULO ROYAL -->
+  <div id="inv-modal-veiculo" onclick="if(event.target===this)_fecharModalVeiculoInv()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);">
+    <div id="inv-modal-veiculo-body" style="background:#111;border:1px solid #2a2a2a;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;"></div>
   </div>`;
 }
+
 
 // ══ RASTREADOR ══
 function _renderInvRastreador(){
