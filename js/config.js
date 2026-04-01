@@ -42,7 +42,9 @@ const ROLE_MENUS = {
   ],
   investidor: [
     {section:'Acesso'},
-    {id:'investidores',icon:'📊',label:'Dashboard'},
+    {id:'investidores',icon:'📊',label:'Dashboard',      invPage:'inv-dashboard'},
+    {id:'investidores',icon:'🏍️',label:'Meus Veículos',  invPage:'inv-veiculos'},
+    {id:'investidores',icon:'📍',label:'Rastreador',     invPage:'inv-rastreador'},
   ],
 };
 
