@@ -42,8 +42,7 @@ const ROLE_MENUS = {
   ],
   investidor: [
     {section:'Acesso'},
-    {id:'investidores',icon:'📊',label:'Métricas & Relatórios'},
-    {id:'dashboard', icon:'⊞', label:'Dashboard geral'},
+    {id:'investidores',icon:'📊',label:'Dashboard'},
   ],
 };
 
