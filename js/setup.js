@@ -62,7 +62,6 @@ async function setupConectar(){
 }
 
 // ══ AUTH ══
-// Só login permitido — criação de conta apenas pelo admin dentro do sistema
 function switchTab(t){
   document.getElementById('tab-login').classList.add('active');
   const tabReg = document.getElementById('tab-register');
@@ -83,7 +82,6 @@ async function fazerLogin(){
   await carregarPerfil(data.user);
 }
 
-// Bloqueado publicamente — só admin cria usuários dentro do sistema
 async function fazerCadastro(){
   notify('Criação de conta desativada. Solicite acesso ao administrador.','error');
 }
@@ -126,11 +124,81 @@ function iniciarApp(){
   chip.className='role-chip '+p.perfil;
 
   goLayer('app');
-  goPage('dashboard');
+
+  // ── Investidor vai direto para o painel, sem passar pelo dashboard ──
+  if(p.perfil === 'investidor'){
+    _invPage = 'inv-dashboard';
+    goPage('investidores');
+  } else {
+    goPage('dashboard');
+  }
+
   carregarTudo();
+
+  // ── Inject botão hamburguer no topbar (mobile) ──
+  _injectHamburguer();
 }
 
-// ══ CRIAR USUÁRIO (só admin, dentro do sistema na aba Usuários) ══
+// ══ HAMBURGUER MOBILE ══
+function _injectHamburguer(){
+  if(document.getElementById('btn-hamburguer')) return;
+  const topbar = document.querySelector('.topbar');
+  if(!topbar) return;
+
+  // Botão hamburguer
+  const btn = document.createElement('button');
+  btn.id = 'btn-hamburguer';
+  btn.className = 'topbar-btn';
+  btn.innerHTML = '☰';
+  btn.title = 'Menu';
+  btn.style.cssText = 'display:none;font-size:18px;';
+  btn.onclick = toggleSidebar;
+  topbar.insertBefore(btn, topbar.firstChild);
+
+  // Overlay escuro atrás da sidebar
+  const overlay = document.createElement('div');
+  overlay.id = 'sidebar-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;display:none;';
+  overlay.onclick = closeSidebar;
+  document.body.appendChild(overlay);
+
+  // Mostra o botão só em mobile via resize
+  function checkMobile(){
+    const isMobile = window.innerWidth <= 768;
+    btn.style.display = isMobile ? 'flex' : 'none';
+    // No mobile, sidebar começa fechada
+    if(isMobile){
+      document.querySelector('.sidebar')?.classList.remove('open');
+      document.getElementById('sidebar-overlay').style.display = 'none';
+    }
+  }
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
+}
+
+function toggleSidebar(){
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if(!sidebar) return;
+  const isOpen = sidebar.classList.toggle('open');
+  if(overlay) overlay.style.display = isOpen ? 'block' : 'none';
+}
+
+function closeSidebar(){
+  document.querySelector('.sidebar')?.classList.remove('open');
+  const overlay = document.getElementById('sidebar-overlay');
+  if(overlay) overlay.style.display = 'none';
+}
+
+// Fecha sidebar ao clicar em item de menu no mobile
+document.addEventListener('click', e=>{
+  if(window.innerWidth > 768) return;
+  if(e.target.closest('.nav-item')){
+    closeSidebar();
+  }
+});
+
+// ══ CRIAR USUÁRIO (só admin) ══
 async function criarUsuarioAdmin(){
   if(currentPerfil?.perfil !== 'admin'){
     notify('Apenas administradores podem criar usuários.','error');
