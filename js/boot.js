@@ -1,13 +1,23 @@
 // boot.js — Inicialização do sistema
+
+// ══ CREDENCIAIS HARDCODADAS (chave anon é pública por design) ══
+const FP_URL = 'https://jjeogfafgbexgxqhubha.supabase.co';
+const FP_KEY = 'COLE_SUA_CHAVE_ANON_AQUI';
+
 window.addEventListener('DOMContentLoaded', async()=>{
-  const url = localStorage.getItem('fp_url');
-  const key = localStorage.getItem('fp_key');
-  if(!url||!key){ goLayer('setup'); return; }
+  // Tenta pegar do localStorage (usuário que já configurou manualmente)
+  // Se não tiver, usa as credenciais hardcodadas — pula setup direto
+  const url = localStorage.getItem('fp_url') || FP_URL;
+  const key = localStorage.getItem('fp_key') || FP_KEY;
 
-  // Mostra app com loading imediatamente — sem piscar tela de setup
+  // Salva no localStorage para manter compatibilidade com o restante do sistema
+  if(!localStorage.getItem('fp_url')) localStorage.setItem('fp_url', FP_URL);
+  if(!localStorage.getItem('fp_key')) localStorage.setItem('fp_key', FP_KEY);
+
+  // Vai direto para o app com loading — NUNCA mostra tela de setup
   goLayer('app');
-
   sb = createClient(url, key);
+
   try{
     const {data:{session}, error} = await sb.auth.getSession();
     if(error) throw error;
@@ -30,9 +40,8 @@ window.addEventListener('DOMContentLoaded', async()=>{
       goLayer('login');
     }
   }catch(e){
-    localStorage.removeItem('fp_url');
-    localStorage.removeItem('fp_key');
-    goLayer('setup');
+    // Se falhar, vai para login (não setup)
+    goLayer('login');
   }
 
   sb.auth.onAuthStateChange(async(event, session)=>{
