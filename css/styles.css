@@ -360,3 +360,22 @@ label{font-size:12px;color:var(--muted);margin-bottom:4px;display:block;}
   .modal-footer { flex-direction: column-reverse; }
   .modal-footer .btn { width: 100%; justify-content: center; }
 }
+
+/* ── Hamburguer e sidebar mobile ── */
+@media (max-width: 768px) {
+  #btn-hamburguer { display: flex !important; }
+
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    z-index: 100;
+    transition: left .25s cubic-bezier(.4,0,.2,1);
+    height: 100%;
+    box-shadow: none;
+    width: 260px;
+  }
+  .sidebar.open {
+    left: 0;
+    box-shadow: 4px 0 32px rgba(0,0,0,.5);
+  }
+}
