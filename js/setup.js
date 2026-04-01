@@ -115,7 +115,7 @@ function iniciarApp(){
   const menus=ROLE_MENUS[p.perfil]||ROLE_MENUS.atendente;
   nav.innerHTML=menus.map(m=>{
     if(m.section) return `<div class="nav-section">${m.section}</div>`;
-    return `<div class="nav-item" id="nav-${m.id}" onclick="goPage('${m.id}',this)"><span class="icon">${m.icon}</span>${m.label}</div>`;
+    return `<div class="nav-item" id="nav-${m.id}" data-inv-page="${m.invPage||''}" onclick="${m.invPage?`goInvPage('${m.invPage}');goPage('${m.id}',this)`:`goPage('${m.id}',this)`}"><span class="icon">${m.icon}</span>${m.label}</div>`;
   }).join('');
 
   document.getElementById('sb-avatar').textContent=(p.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
