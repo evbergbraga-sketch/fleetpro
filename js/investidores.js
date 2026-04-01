@@ -16,6 +16,14 @@ function goInvPage(page){
   renderInvestidores();
 }
 
+
+// ══ SIDEBAR DO INVESTIDOR ══
+function _atualizarSidebarInv(){
+  document.querySelectorAll('.nav-item[data-inv-page]').forEach(el=>{
+    el.classList.toggle('active', el.dataset.invPage === _invPage);
+  });
+}
+
 // ══ RENDER PRINCIPAL ══
 function renderInvestidores(){
   const el = document.getElementById('page-investidores');
@@ -51,28 +59,16 @@ function renderInvestidores(){
       </select>
     </div>` : '';
 
-  // Menu lateral interno
-  const navHtml = `
-    <div style="display:flex;gap:8px;margin-bottom:24px;border-bottom:2px solid var(--border);padding-bottom:0">
-      ${[
-        {page:'inv-dashboard', icon:'📊', label:'Dashboard'},
-        {page:'inv-veiculos',  icon:'🏍️', label:'Meus Veículos'},
-        {page:'inv-rastreador',icon:'📍', label:'Rastreador'},
-      ].map(m=>`
-        <div class="inv-nav-item" data-page="${m.page}" onclick="goInvPage('${m.page}')"
-          style="padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted);transition:all .2s;display:flex;align-items:center;gap:6px;${_invPage===m.page?'border-bottom-color:var(--accent);color:var(--accent)':''}">
-          ${m.icon} ${m.label}
-        </div>`).join('')}
-    </div>`;
-
   if(_invPage === 'inv-dashboard'){
-    el.innerHTML = selectorHtml + navHtml + _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, rendMensal, rendAnual, rentabilidade, ocupFinal, totalVeic);
+    el.innerHTML = selectorHtml + _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, rendMensal, rendAnual, rentabilidade, ocupFinal, totalVeic);
     _carregarPagamentos(isAdmin ? (document.getElementById('inv-selector')?.value||'') : currentUser?.id);
   } else if(_invPage === 'inv-veiculos'){
-    el.innerHTML = selectorHtml + navHtml + _renderInvVeiculos(veiculosFinal);
+    el.innerHTML = selectorHtml + _renderInvVeiculos(veiculosFinal);
   } else if(_invPage === 'inv-rastreador'){
-    el.innerHTML = selectorHtml + navHtml + _renderInvRastreador();
+    el.innerHTML = selectorHtml + _renderInvRastreador();
   }
+  // Atualizar sidebar
+  _atualizarSidebarInv();
 }
 
 // ══ DASHBOARD ══
