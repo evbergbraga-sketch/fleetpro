@@ -44,7 +44,7 @@ function _injectInvCss(){
   const style = document.createElement('style');
   style.id = 'inv-royal-css';
   style.textContent = `
-    /* ── Cobre o container pai .content e a .page quando investidor está ativo ── */
+    /* ── Cobre container pai quando investidor ativo ── */
     body.inv-active .content {
       background: ${INV_THEME.bg} !important;
       padding: 0 !important;
@@ -53,84 +53,99 @@ function _injectInvCss(){
       display: block;
     }
 
-    /* ── Área principal do painel ── */
+    /* ── Mobile: esconde sidebar e topbar, expande main ── */
+    @media (max-width: 768px) {
+      body.inv-active .sidebar { display: none !important; }
+      body.inv-active .main { margin-left: 0 !important; width: 100% !important; }
+      body.inv-active .topbar { display: none !important; }
+    }
+
+    /* ── Área principal ── */
     #page-investidores {
       background: ${INV_THEME.bg};
       min-height: 100vh;
-      padding: 28px 32px 48px;
+      padding: 20px 16px 80px;
       font-family: 'Segoe UI', system-ui, sans-serif;
       color: ${INV_THEME.text};
       box-sizing: border-box;
+    }
+    @media (min-width: 769px) {
+      #page-investidores { padding: 28px 32px 48px; }
+    }
+
+    /* ── Nav mobile (barra de abas embaixo na tela) ── */
+    .inv-mobile-nav { display: none; }
+    @media (max-width: 768px) {
+      .inv-mobile-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        background: #111;
+        border-top: 1px solid ${INV_THEME.border2};
+        z-index: 999;
+      }
+      .inv-mobile-nav-btn {
+        flex: 1; padding: 10px 6px 14px;
+        background: none; border: none;
+        color: ${INV_THEME.gray};
+        font-size: 10px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.5px;
+        cursor: pointer; transition: all .2s; text-align: center;
+        border-right: 1px solid ${INV_THEME.border};
+      }
+      .inv-mobile-nav-btn:last-child { border-right: none; }
+      .inv-mobile-nav-btn.active { color: ${INV_THEME.green}; background: rgba(46,204,113,0.06); }
+      .inv-mobile-nav-icon { font-size: 18px; display: block; margin-bottom: 3px; }
     }
 
     /* ── Hero ── */
     .inv-hero {
       background: linear-gradient(135deg, #0a1a0f 0%, #0d2b15 50%, #0a1a0f 100%);
       border: 1px solid ${INV_THEME.border2};
-      border-radius: 16px;
-      padding: 32px 36px;
-      margin-bottom: 24px;
+      border-radius: 14px;
+      padding: 22px 18px;
+      margin-bottom: 16px;
       position: relative;
       overflow: visible;
     }
-    .inv-hero::before {
-      content: '';
-      position: absolute;
-      top: -40px; right: -40px;
-      width: 220px; height: 220px;
-      background: radial-gradient(circle, rgba(46,204,113,0.10) 0%, transparent 70%);
-      border-radius: 50%;
-      pointer-events: none;
+    @media (min-width: 769px) {
+      .inv-hero { padding: 32px 36px; margin-bottom: 24px; border-radius: 16px; }
     }
     .inv-hero-tag {
-      font-size: 11px;
-      color: ${INV_THEME.green};
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 8px;
+      font-size: 10px; color: ${INV_THEME.green};
+      font-weight: 700; text-transform: uppercase;
+      letter-spacing: 2px; margin-bottom: 6px;
     }
     .inv-hero-nome {
-      font-size: 30px;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 6px;
-      white-space: nowrap;
+      font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 4px;
     }
-    .inv-hero-sub {
-      font-size: 14px;
-      color: #666;
+    @media (min-width: 769px) {
+      .inv-hero-nome { font-size: 30px; white-space: nowrap; }
     }
-    .inv-hero-sub strong {
-      color: ${INV_THEME.green};
-    }
-    .inv-hero-brand {
-      text-align: right;
-    }
-    .inv-hero-brand-name {
-      font-size: 11px;
-      color: #444;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-    .inv-hero-brand-copy {
-      font-size: 10px;
-      color: #2a2a2a;
-    }
+    .inv-hero-sub { font-size: 13px; color: #666; }
+    .inv-hero-sub strong { color: ${INV_THEME.green}; }
+    .inv-hero-brand { text-align: right; flex-shrink: 0; }
+    .inv-hero-brand-name { font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+    .inv-hero-brand-copy { font-size: 10px; color: #2a2a2a; }
 
-    /* ── Grids de stats ── */
+    /* ── Grids stats — 2 cols mobile, 4/3 desktop ── */
     .inv-stat-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-      margin-bottom: 20px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px; margin-bottom: 12px;
     }
     .inv-stat-grid-3 {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-      margin-bottom: 20px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px; margin-bottom: 12px;
+    }
+    @media (min-width: 769px) {
+      .inv-stat-grid   { grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+      .inv-stat-grid-3 { grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+    }
+    /* Último card do grid-3 ocupa 2 colunas no mobile */
+    @media (max-width: 768px) {
+      .inv-stat-grid-3 .inv-stat:last-child { grid-column: span 2; }
     }
 
     /* ── Card stat ── */
@@ -138,204 +153,131 @@ function _injectInvCss(){
       background: ${INV_THEME.bgCard};
       border: 1px solid ${INV_THEME.border};
       border-radius: 12px;
-      padding: 22px 20px 18px;
-      position: relative;
-      overflow: hidden;
+      padding: 14px 13px 12px;
+      position: relative; overflow: hidden;
       transition: border-color .2s, transform .2s;
       box-sizing: border-box;
     }
-    .inv-stat:hover {
-      border-color: ${INV_THEME.green};
-      transform: translateY(-2px);
+    @media (min-width: 769px) {
+      .inv-stat { padding: 22px 20px 18px; }
     }
+    .inv-stat:hover { border-color: ${INV_THEME.green}; transform: translateY(-2px); }
     .inv-stat::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0;
+      content: ''; position: absolute; top: 0; left: 0;
       width: 100%; height: 3px;
       background: linear-gradient(90deg, ${INV_THEME.green}, ${INV_THEME.greenD});
     }
-    .inv-stat-icon {
-      font-size: 20px;
-      margin-bottom: 10px;
-      opacity: .8;
-      display: block;
-    }
+    .inv-stat-icon { font-size: 16px; margin-bottom: 8px; opacity: .8; display: block; }
+    @media (min-width: 769px) { .inv-stat-icon { font-size: 20px; margin-bottom: 10px; } }
     .inv-stat-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: ${INV_THEME.gray};
-      margin-bottom: 6px;
-      font-weight: 600;
+      font-size: 9px; text-transform: uppercase;
+      letter-spacing: 1px; color: ${INV_THEME.gray};
+      margin-bottom: 4px; font-weight: 600;
     }
-    .inv-stat-val {
-      font-size: 24px;
-      font-weight: 800;
-      color: ${INV_THEME.green};
-      line-height: 1.1;
-    }
-    .inv-stat-sub {
-      font-size: 11px;
-      color: ${INV_THEME.gray2};
-      margin-top: 5px;
-    }
+    @media (min-width: 769px) { .inv-stat-label { font-size: 10px; letter-spacing: 1.5px; margin-bottom: 6px; } }
+    .inv-stat-val { font-size: 17px; font-weight: 800; color: ${INV_THEME.green}; line-height: 1.1; }
+    @media (min-width: 769px) { .inv-stat-val { font-size: 24px; } }
+    .inv-stat-sub { font-size: 10px; color: ${INV_THEME.gray2}; margin-top: 4px; }
 
-    /* ── Card genérico (tabelas/seções) ── */
+    /* ── Card genérico ── */
     .inv-card {
       background: ${INV_THEME.bgCard};
       border: 1px solid ${INV_THEME.border};
-      border-radius: 12px;
-      margin-bottom: 18px;
-      overflow: hidden;
+      border-radius: 12px; margin-bottom: 14px; overflow: hidden;
     }
     .inv-card-header {
-      padding: 16px 20px;
+      padding: 13px 16px;
       border-bottom: 1px solid ${INV_THEME.border};
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between;
     }
+    @media (min-width: 769px) { .inv-card-header { padding: 16px 20px; } }
     .inv-card-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: ${INV_THEME.text};
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      font-size: 11px; font-weight: 700; color: ${INV_THEME.text};
+      text-transform: uppercase; letter-spacing: 1px;
     }
+    @media (min-width: 769px) { .inv-card-title { font-size: 13px; } }
 
-    /* ── Tabelas ── */
-    .inv-card table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+    /* ── Tabelas com scroll horizontal no mobile ── */
+    .inv-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .inv-card table { width: 100%; border-collapse: collapse; min-width: 440px; }
     .inv-card thead th {
-      padding: 10px 20px;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: ${INV_THEME.gray};
-      text-align: left;
+      padding: 9px 14px; font-size: 10px; text-transform: uppercase;
+      letter-spacing: 1px; color: ${INV_THEME.gray}; text-align: left;
       border-bottom: 1px solid ${INV_THEME.border};
-      background: ${INV_THEME.bgCard2};
+      background: ${INV_THEME.bgCard2}; white-space: nowrap;
     }
     .inv-card tbody td {
-      padding: 13px 20px;
-      font-size: 13px;
-      color: ${INV_THEME.text};
-      border-bottom: 1px solid ${INV_THEME.border};
+      padding: 11px 14px; font-size: 13px;
+      color: ${INV_THEME.text}; border-bottom: 1px solid ${INV_THEME.border};
     }
     .inv-card tbody tr:last-child td { border-bottom: none; }
     .inv-card tbody tr:hover td { background: ${INV_THEME.bgCard2}; }
 
     /* ── Badges ── */
     .inv-badge-green {
-      background: rgba(46,204,113,.12);
-      color: ${INV_THEME.green};
+      background: rgba(46,204,113,.12); color: ${INV_THEME.green};
       border: 1px solid rgba(46,204,113,.25);
-      padding: 3px 10px;
-      border-radius: 99px;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
+      padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; white-space: nowrap;
     }
     .inv-badge-gray {
-      background: rgba(255,255,255,.06);
-      color: ${INV_THEME.gray};
+      background: rgba(255,255,255,.06); color: ${INV_THEME.gray};
       border: 1px solid ${INV_THEME.border2};
-      padding: 3px 10px;
-      border-radius: 99px;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
+      padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; white-space: nowrap;
     }
 
-    /* ── Projeção ── */
+    /* ── Projeção 2x2 mobile, 4x1 desktop ── */
     .inv-proj-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      padding: 16px 20px;
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 10px; padding: 14px 16px;
+    }
+    @media (min-width: 769px) {
+      .inv-proj-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px 20px; }
     }
     .inv-proj-item {
-      text-align: center;
-      padding: 18px 12px;
-      background: #0d1f12;
-      border: 1px solid ${INV_THEME.border2};
-      border-radius: 10px;
-      transition: border-color .2s;
+      text-align: center; padding: 14px 10px;
+      background: #0d1f12; border: 1px solid ${INV_THEME.border2};
+      border-radius: 10px; transition: border-color .2s;
     }
     .inv-proj-item:hover { border-color: ${INV_THEME.green}; }
     .inv-proj-mes { font-size: 10px; color: ${INV_THEME.gray}; text-transform: uppercase; letter-spacing: 1px; }
-    .inv-proj-val { font-size: 22px; font-weight: 800; color: ${INV_THEME.green}; margin: 10px 0 4px; }
+    .inv-proj-val { font-size: 16px; font-weight: 800; color: ${INV_THEME.green}; margin: 8px 0 4px; }
+    @media (min-width: 769px) { .inv-proj-val { font-size: 22px; margin: 10px 0 4px; } }
     .inv-proj-pct { font-size: 10px; color: ${INV_THEME.gray2}; }
 
     /* ── Botão ── */
     .inv-btn-green {
-      background: ${INV_THEME.green};
-      color: #000;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background .2s;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      background: ${INV_THEME.green}; color: #000; border: none;
+      padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: background .2s; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
     }
     .inv-btn-green:hover { background: ${INV_THEME.greenD}; }
 
     /* ── Selector admin ── */
     .inv-selector-bar {
-      background: ${INV_THEME.bgCard};
-      border: 1px solid ${INV_THEME.border2};
-      border-radius: 10px;
-      padding: 14px 20px;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
+      background: ${INV_THEME.bgCard}; border: 1px solid ${INV_THEME.border2};
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
     }
     .inv-selector-bar select {
-      font-size: 13px;
-      background: #1a1a1a;
-      border: 1px solid #333;
-      color: #f0f0f0;
-      padding: 6px 12px;
-      border-radius: 8px;
-      outline: none;
-      cursor: pointer;
+      font-size: 13px; background: #1a1a1a; border: 1px solid #333;
+      color: #f0f0f0; padding: 6px 12px; border-radius: 8px;
+      outline: none; cursor: pointer; flex: 1; min-width: 160px;
     }
 
-    /* ── Empty state ── */
-    .inv-empty {
-      text-align: center;
-      padding: 32px;
-      color: ${INV_THEME.gray};
-      font-size: 13px;
-    }
+    /* ── Empty ── */
+    .inv-empty { text-align: center; padding: 28px; color: ${INV_THEME.gray}; font-size: 13px; }
 
-    /* ── Stat clickable ── */
-    .inv-stat-link {
-      cursor: pointer;
-    }
-    .inv-stat-link .inv-stat-val {
-      font-size: 17px;
-      color: #666;
-      transition: color .2s;
-    }
-    .inv-stat-link:hover .inv-stat-val {
-      color: ${INV_THEME.green};
-    }
+    /* ── Stat link ── */
+    .inv-stat-link { cursor: pointer; }
+    .inv-stat-link .inv-stat-val { font-size: 15px; color: #666; transition: color .2s; }
+    @media (min-width: 769px) { .inv-stat-link .inv-stat-val { font-size: 17px; } }
+    .inv-stat-link:hover .inv-stat-val { color: ${INV_THEME.green}; }
   `;
   document.head.appendChild(style);
 }
 
-// ══ Ativa / desativa classe no body para cobrir .content ══
+// ══ Ativa / desativa classe Royal no body ══
 function _setInvBodyClass(active){
   document.body.classList.toggle('inv-active', active);
 }
@@ -357,17 +299,16 @@ function renderInvestidores(){
     veiculosFinal = allVeiculos.filter(v=>v.investidor_id===currentUser?.id);
   }
 
-  const ids          = new Set(veiculosFinal.map(v=>v.id));
-  const locsFinal    = allLocacoes.filter(l=>ids.has(l.veiculo_id));
-  const qtdMotos     = veiculosFinal.filter(v=>v.tipo==='moto').length;
-  const investimento = qtdMotos * VALOR_MOTO;
-  const rendMensal   = qtdMotos * RENDIMENTO_MES;
-  const rendAnual    = rendMensal * 12;
-  const rentabilidade= investimento > 0 ? ((rendMensal/investimento)*100).toFixed(2) : '0.00';
-  const totalVeic    = veiculosFinal.length;
-  const ocupFinal    = totalVeic > 0 ? Math.round(veiculosFinal.filter(v=>v.status==='alugado').length/totalVeic*100) : 0;
-
-  const invSel = isAdmin ? (document.getElementById('inv-selector')?.value || '') : '';
+  const ids           = new Set(veiculosFinal.map(v=>v.id));
+  const locsFinal     = allLocacoes.filter(l=>ids.has(l.veiculo_id));
+  const qtdMotos      = veiculosFinal.filter(v=>v.tipo==='moto').length;
+  const investimento  = qtdMotos * VALOR_MOTO;
+  const rendMensal    = qtdMotos * RENDIMENTO_MES;
+  const rendAnual     = rendMensal * 12;
+  const rentabilidade = investimento > 0 ? ((rendMensal/investimento)*100).toFixed(2) : '0.00';
+  const totalVeic     = veiculosFinal.length;
+  const ocupFinal     = totalVeic > 0 ? Math.round(veiculosFinal.filter(v=>v.status==='alugado').length/totalVeic*100) : 0;
+  const invSel        = isAdmin ? (document.getElementById('inv-selector')?.value || '') : '';
 
   const selectorHtml = isAdmin ? `
     <div class="inv-selector-bar">
@@ -378,23 +319,37 @@ function renderInvestidores(){
       </select>
     </div>` : '';
 
+  // Nav mobile fixa na parte inferior (visível só em mobile via CSS)
+  const mobileNav = `
+    <div class="inv-mobile-nav">
+      <button class="inv-mobile-nav-btn ${_invPage==='inv-dashboard'?'active':''}" onclick="goInvPage('inv-dashboard')">
+        <span class="inv-mobile-nav-icon">📊</span>Dashboard
+      </button>
+      <button class="inv-mobile-nav-btn ${_invPage==='inv-veiculos'?'active':''}" onclick="goInvPage('inv-veiculos')">
+        <span class="inv-mobile-nav-icon">🏍️</span>Veículos
+      </button>
+      <button class="inv-mobile-nav-btn ${_invPage==='inv-rastreador'?'active':''}" onclick="goInvPage('inv-rastreador')">
+        <span class="inv-mobile-nav-icon">📍</span>Rastreador
+      </button>
+    </div>`;
+
   if(_invPage === 'inv-dashboard'){
-    el.innerHTML = selectorHtml + _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, rendMensal, rendAnual, rentabilidade, ocupFinal, totalVeic);
+    el.innerHTML = selectorHtml + mobileNav + _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, rendMensal, rendAnual, rentabilidade, ocupFinal, totalVeic);
     _carregarPagamentos(isAdmin ? (document.getElementById('inv-selector')?.value||'') : currentUser?.id);
   } else if(_invPage === 'inv-veiculos'){
-    el.innerHTML = selectorHtml + _renderInvVeiculos(veiculosFinal);
+    el.innerHTML = selectorHtml + mobileNav + _renderInvVeiculos(veiculosFinal);
   } else if(_invPage === 'inv-rastreador'){
-    el.innerHTML = selectorHtml + _renderInvRastreador();
+    el.innerHTML = selectorHtml + mobileNav + _renderInvRastreador();
   }
   _atualizarSidebarInv();
 }
 
 // ══ DASHBOARD ══
 function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, rendMensal, rendAnual, rentabilidade, ocupFinal, totalVeic){
-  const nomeInv  = currentPerfil?.nome || 'Investidor';
-  const alugadas = veiculosFinal.filter(v=>v.status==='alugado').length;
+  const nomeInv     = currentPerfil?.nome || 'Investidor';
+  const alugadas    = veiculosFinal.filter(v=>v.status==='alugado').length;
   const disponiveis = veiculosFinal.filter(v=>v.status==='disponivel').length;
-  const ocupColor = ocupFinal>=70 ? INV_THEME.green : ocupFinal>=40 ? INV_THEME.gold : '#e74c3c';
+  const ocupColor   = ocupFinal>=70 ? INV_THEME.green : ocupFinal>=40 ? INV_THEME.gold : '#e74c3c';
 
   return `
   <!-- HERO -->
@@ -403,16 +358,16 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
       <div style="min-width:0">
         <div class="inv-hero-tag">Painel do Investidor</div>
         <div class="inv-hero-nome">Olá, ${nomeInv.split(' ')[0]}! 👋</div>
-        <div class="inv-hero-sub">Sua carteira está rendendo <strong>R$ ${rendMensal.toLocaleString('pt-BR')}/mês</strong></div>
+        <div class="inv-hero-sub">Carteira rendendo <strong>R$ ${rendMensal.toLocaleString('pt-BR')}/mês</strong></div>
       </div>
-      <div class="inv-hero-brand" style="flex-shrink:0">
+      <div class="inv-hero-brand">
         <div class="inv-hero-brand-name">Locadora Royal</div>
-        <div class="inv-hero-brand-copy">© FleetPro Platform</div>
+        <div class="inv-hero-brand-copy">© FleetPro</div>
       </div>
     </div>
   </div>
 
-  <!-- STATS FINANCEIROS -->
+  <!-- STATS FINANCEIROS (2x2 mobile / 4x1 desktop) -->
   <div class="inv-stat-grid">
     <div class="inv-stat">
       <span class="inv-stat-icon">💼</span>
@@ -440,29 +395,29 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
     </div>
   </div>
 
-  <!-- STATS OPERACIONAIS -->
+  <!-- STATS OPERACIONAIS (2x2 mobile / 3x1 desktop — último span 2 no mobile) -->
   <div class="inv-stat-grid-3">
     <div class="inv-stat">
       <span class="inv-stat-icon">🏍️</span>
       <div class="inv-stat-label">Motos na carteira</div>
       <div class="inv-stat-val">${qtdMotos}</div>
-      <div class="inv-stat-sub">${alugadas} alugadas · ${disponiveis} disponíveis</div>
+      <div class="inv-stat-sub">${alugadas} alug. · ${disponiveis} disp.</div>
     </div>
     <div class="inv-stat">
       <span class="inv-stat-icon">📊</span>
       <div class="inv-stat-label">Taxa de ocupação</div>
       <div class="inv-stat-val" style="color:${ocupColor}">${ocupFinal}%</div>
-      <div class="inv-stat-sub">${alugadas} de ${totalVeic} veículos alugados</div>
+      <div class="inv-stat-sub">${alugadas} de ${totalVeic} alugados</div>
     </div>
     <div class="inv-stat inv-stat-link" onclick="goInvPage('inv-veiculos')">
       <span class="inv-stat-icon">🏍️</span>
       <div class="inv-stat-label">Meus veículos</div>
       <div class="inv-stat-val">Ver detalhes →</div>
-      <div class="inv-stat-sub">clique para acessar</div>
+      <div class="inv-stat-sub">toque para acessar</div>
     </div>
   </div>
 
-  <!-- PROJEÇÃO -->
+  <!-- PROJEÇÃO (2x2 mobile / 4x1 desktop) -->
   <div class="inv-card">
     <div class="inv-card-header">
       <span class="inv-card-title">📊 Projeção de rendimentos</span>
@@ -493,30 +448,26 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
     <div class="inv-card-header">
       <span class="inv-card-title">📋 Histórico de locações</span>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Veículo</th>
-          <th>Cliente</th>
-          <th>Período</th>
-          <th>Total</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${locsFinal.length ? locsFinal.map(l=>`
-        <tr>
-          <td>
-            <div style="font-weight:600;color:#fff">${l.veiculos?.marca||''} ${l.veiculos?.modelo||''}</div>
-            <div style="font-size:11px;color:#555">${l.veiculos?.placa||''}</div>
-          </td>
-          <td style="color:#aaa">${l.clientes?.nome||'—'}</td>
-          <td style="font-size:12px;color:#666">${fmtData(l.data_inicio)} → ${fmtData(l.data_fim)}</td>
-          <td style="color:${INV_THEME.green};font-weight:700">R$ ${(l.total||0).toFixed(2)}</td>
-          <td>${l.status==='ativa'?'<span class="inv-badge-green">Ativa</span>':'<span class="inv-badge-gray">Encerrada</span>'}</td>
-        </tr>`).join('') : `<tr><td colspan="5" class="inv-empty">Nenhuma locação registrada.</td></tr>`}
-      </tbody>
-    </table>
+    <div class="inv-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Veículo</th><th>Cliente</th><th>Período</th><th>Total</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          ${locsFinal.length ? locsFinal.map(l=>`
+          <tr>
+            <td>
+              <div style="font-weight:600;color:#fff">${l.veiculos?.marca||''} ${l.veiculos?.modelo||''}</div>
+              <div style="font-size:11px;color:#555">${l.veiculos?.placa||''}</div>
+            </td>
+            <td style="color:#aaa">${l.clientes?.nome||'—'}</td>
+            <td style="font-size:12px;color:#666;white-space:nowrap">${fmtData(l.data_inicio)} → ${fmtData(l.data_fim)}</td>
+            <td style="color:${INV_THEME.green};font-weight:700;white-space:nowrap">R$ ${(l.total||0).toFixed(2)}</td>
+            <td>${l.status==='ativa'?'<span class="inv-badge-green">Ativa</span>':'<span class="inv-badge-gray">Encerrada</span>'}</td>
+          </tr>`).join('') : `<tr><td colspan="5" class="inv-empty">Nenhuma locação registrada.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
   </div>`;
 }
 
@@ -540,27 +491,27 @@ function _renderPagamentosLista(){
   if(!el) return;
   if(!_invPagamentos.length){ _renderPagamentosVazio(); return; }
   const isAdmin = currentPerfil?.perfil==='admin';
-  el.innerHTML = `<table>
-    <thead>
-      <tr>
-        <th>Referência</th>
-        <th>Data</th>
-        <th>Valor</th>
-        <th>Observação</th>
-        ${isAdmin?'<th></th>':''}
-      </tr>
-    </thead>
-    <tbody>
-      ${_invPagamentos.map(p=>`
-      <tr>
-        <td style="font-weight:600;color:#fff">${p.referencia||'—'}</td>
-        <td style="color:#666">${fmtData(p.data_pagamento)}</td>
-        <td style="color:${INV_THEME.green};font-weight:700">R$ ${(p.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-        <td style="color:#555;font-size:12px">${p.observacao||'—'}</td>
-        ${isAdmin?`<td><button onclick="excluirPagamento('${p.id}')" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:14px">🗑️</button></td>`:''}
-      </tr>`).join('')}
-    </tbody>
-  </table>`;
+  el.innerHTML = `
+    <div class="inv-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Referência</th><th>Data</th><th>Valor</th><th>Observação</th>
+            ${isAdmin?'<th></th>':''}
+          </tr>
+        </thead>
+        <tbody>
+          ${_invPagamentos.map(p=>`
+          <tr>
+            <td style="font-weight:600;color:#fff">${p.referencia||'—'}</td>
+            <td style="color:#666;white-space:nowrap">${fmtData(p.data_pagamento)}</td>
+            <td style="color:${INV_THEME.green};font-weight:700;white-space:nowrap">R$ ${(p.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+            <td style="color:#555;font-size:12px">${p.observacao||'—'}</td>
+            ${isAdmin?`<td><button onclick="excluirPagamento('${p.id}')" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:14px">🗑️</button></td>`:''}
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 function abrirModalPagamento(){
@@ -601,52 +552,46 @@ function _renderInvVeiculos(veiculosFinal){
       <span class="inv-card-title">🏍️ Meus veículos</span>
       <span style="font-size:12px;color:#555">${veiculosFinal.length} veículo${veiculosFinal.length!==1?'s':''}</span>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Veículo</th>
-          <th>Placa</th>
-          <th>Tipo</th>
-          <th>Status</th>
-          <th>Seguradora</th>
-          <th>Apólice</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${veiculosFinal.length ? veiculosFinal.map(v=>`
-        <tr>
-          <td>
-            <div style="font-weight:600;color:#fff">${v.marca} ${v.modelo}</div>
-            <div style="font-size:11px;color:#555">${v.ano||''} · ${v.cor||''}</div>
-          </td>
-          <td style="font-family:monospace;color:${INV_THEME.green};font-weight:600">${v.placa}</td>
-          <td style="color:#888">${v.tipo==='moto'?'🏍️ Moto':'🚗 Carro'}</td>
-          <td>${v.status==='alugado'?'<span class="inv-badge-green">Alugado</span>':'<span class="inv-badge-gray">Disponível</span>'}</td>
-          <td style="color:#aaa">${v.seguradora||'<span style="color:#333">—</span>'}</td>
-          <td style="color:#aaa">${v.apolice||'<span style="color:#333">—</span>'}</td>
-        </tr>`).join('') : `<tr><td colspan="6" class="inv-empty">Nenhum veículo na carteira.</td></tr>`}
-      </tbody>
-    </table>
+    <div class="inv-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Veículo</th><th>Placa</th><th>Status</th><th>Seguradora</th><th>Apólice</th></tr>
+        </thead>
+        <tbody>
+          ${veiculosFinal.length ? veiculosFinal.map(v=>`
+          <tr>
+            <td>
+              <div style="font-weight:600;color:#fff">${v.marca} ${v.modelo}</div>
+              <div style="font-size:11px;color:#555">${v.ano||''} · ${v.cor||''}</div>
+            </td>
+            <td style="font-family:monospace;color:${INV_THEME.green};font-weight:600;white-space:nowrap">${v.placa}</td>
+            <td>${v.status==='alugado'?'<span class="inv-badge-green">Alugado</span>':'<span class="inv-badge-gray">Disponível</span>'}</td>
+            <td style="color:#aaa">${v.seguradora||'<span style="color:#333">—</span>'}</td>
+            <td style="color:#aaa">${v.apolice||'<span style="color:#333">—</span>'}</td>
+          </tr>`).join('') : `<tr><td colspan="5" class="inv-empty">Nenhum veículo na carteira.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
   </div>`;
 }
 
 // ══ RASTREADOR ══
 function _renderInvRastreador(){
-  const link = currentPerfil?.link_rastreador || '';
+  const link    = currentPerfil?.link_rastreador || '';
   const isAdmin = currentPerfil?.perfil === 'admin';
   return `
-  <div class="inv-card" style="max-width:560px">
+  <div class="inv-card">
     <div class="inv-card-header">
       <span class="inv-card-title">📍 Rastreador</span>
     </div>
-    <div style="padding:40px;text-align:center">
-      <div style="font-size:52px;margin-bottom:18px">📍</div>
+    <div style="padding:40px 20px;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">📍</div>
       ${link ? `
-        <p style="font-size:13px;color:#666;margin-bottom:20px">Acesse o sistema de rastreamento em tempo real dos seus veículos:</p>
+        <p style="font-size:13px;color:#666;margin-bottom:20px">Acesse o rastreamento em tempo real dos seus veículos:</p>
         <a href="${link}" target="_blank" rel="noopener" class="inv-btn-green" style="font-size:14px;padding:12px 24px">
           📍 Abrir Rastreador ↗
         </a>
-        <div style="margin-top:14px;font-size:11px;color:#333">${link}</div>
+        <div style="margin-top:14px;font-size:11px;color:#333;word-break:break-all">${link}</div>
       ` : `
         <p style="font-size:13px;color:#555;margin-bottom:18px">Link do rastreador não configurado.</p>
         ${isAdmin
@@ -667,9 +612,7 @@ async function configurarRastreador(){
   renderInvestidores();
 }
 
-// ══ HOOK: remove classe do body ao sair da página investidor ══
-// Chame _setInvBodyClass(false) em goPage() do nav.js quando mudar de aba
-// Se preferir fazer aqui, o nav.js pode chamar window._invLeave = _setInvBodyClass
+// ══ HOOK: remove classe Royal ao sair do painel ══
 window._invLeave = function(){ _setInvBodyClass(false); };
 
 function calcReceitaMes(){
