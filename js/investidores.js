@@ -639,3 +639,76 @@ function calcOcupacao(){
   if(!allVeiculos.length) return 0;
   return Math.round(allLocacoes.length/allVeiculos.length*100);
 }
+
+// ══ MODAL VEÍCULO ROYAL ══
+window._abrirModalVeiculoInv = function(idx){
+  const v = (window._invVCache||[])[idx];
+  if(!v) return;
+
+  const G = '#2ecc71';
+  const statusBadge = v.status==='alugado'
+    ? `<span style="background:rgba(46,204,113,.12);color:#2ecc71;border:1px solid rgba(46,204,113,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">Alugado</span>`
+    : v.status==='manutencao'
+    ? `<span style="background:rgba(240,192,64,.12);color:#f0c040;border:1px solid rgba(240,192,64,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">Manutenção</span>`
+    : `<span style="background:rgba(255,255,255,.06);color:#888;border:1px solid #2a2a2a;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">Disponível</span>`;
+
+  const campos = [
+    {l:'Tipo',       v: v.tipo==='moto'?'🏍️ Moto':'🚗 Carro'},
+    {l:'Marca',      v: v.marca||'—'},
+    {l:'Modelo',     v: v.modelo||'—'},
+    {l:'Placa',      v: v.placa||'—', mono:true},
+    {l:'Ano',        v: v.ano||'—'},
+    {l:'Cor',        v: v.cor||'—'},
+    {l:'Câmbio',     v: v.cambio||'—'},
+    {l:'Km atual',   v: v.km_atual!=null ? Number(v.km_atual).toLocaleString('pt-BR')+' km' : '—'},
+    {l:'Diária',     v: v.diaria!=null ? 'R$ '+Number(v.diaria).toLocaleString('pt-BR',{minimumFractionDigits:2}) : '—'},
+    {l:'Seguradora', v: v.seguradora||'—'},
+    {l:'Apólice',    v: v.apolice||'—'},
+    {l:'Observações',v: v.observacoes||'—'},
+  ];
+
+  // Cria o overlay se não existir
+  let modal = document.getElementById('inv-modal-veiculo');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'inv-modal-veiculo';
+    modal.onclick = e => { if(e.target===modal) window._fecharModalVeiculoInv(); };
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+    const body = document.createElement('div');
+    body.id = 'inv-modal-veiculo-body';
+    body.style.cssText = 'background:#111;border:1px solid #2a2a2a;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+    modal.appendChild(body);
+    document.body.appendChild(modal);
+  }
+
+  document.getElementById('inv-modal-veiculo-body').innerHTML = `
+    <div style="background:linear-gradient(135deg,#0a1a0f 0%,#0d2b15 100%);border-radius:16px 16px 0 0;padding:24px 24px 20px;position:relative">
+      <button onclick="window._fecharModalVeiculoInv()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.06);border:1px solid #333;color:#888;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+      <div style="font-size:11px;color:${G};font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">${v.tipo==='moto'?'🏍️':'🚗'} Ficha do veículo</div>
+      <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:8px">${v.marca} ${v.modelo}</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-family:monospace;font-size:13px;font-weight:700;color:${G};background:rgba(46,204,113,.08);border:1px solid rgba(46,204,113,.2);padding:4px 12px;border-radius:8px">${v.placa}</span>
+        ${statusBadge}
+      </div>
+    </div>
+    <div style="padding:4px 24px 8px">
+      ${campos.map(c=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #1a1a1a">
+          <span style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;font-weight:600;flex-shrink:0">${c.l}</span>
+          <span style="font-size:13px;color:${c.mono?G:'#ccc'};font-family:${c.mono?'monospace':'inherit'};font-weight:${c.mono?'700':'400'};text-align:right;max-width:65%;word-break:break-word">${c.v}</span>
+        </div>`).join('')}
+    </div>
+    <div style="padding:16px 24px 24px">
+      <button onclick="window._fecharModalVeiculoInv()" style="background:#2ecc71;color:#000;border:none;width:100%;padding:13px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">Fechar</button>
+    </div>
+  `;
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+};
+
+window._fecharModalVeiculoInv = function(){
+  const modal = document.getElementById('inv-modal-veiculo');
+  if(modal) modal.style.display = 'none';
+  document.body.style.overflow = '';
+};
