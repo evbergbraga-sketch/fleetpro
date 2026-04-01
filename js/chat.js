@@ -339,7 +339,9 @@ function abrirChat(cid){
     document.getElementById('chat-av').style.background = 'rgba(139,139,139,0.2)';
     document.getElementById('chat-av').style.color = 'var(--muted)';
     document.getElementById('chat-name').textContent = 'Desconhecido';
-    document.getElementById('chat-info').textContent = cid+' · Clique em Perfil para cadastrar';
+    document.getElementById('chat-info').textContent = cid+' · Clique em Cadastrar para registrar';
+    const btnCad = document.getElementById('btn-cadastrar-chat');
+    if(btnCad) btnCad.style.display = 'flex';
     renderChatMsgs(cid);
     renderChatContacts();
     return;
@@ -350,6 +352,8 @@ function abrirChat(cid){
   document.getElementById('chat-av').style.color = 'var(--accent)';
   document.getElementById('chat-name').textContent = c.nome;
   document.getElementById('chat-info').textContent = c.telefone ? '📱 '+c.telefone : 'Sem telefone';
+  const btnCad = document.getElementById('btn-cadastrar-chat');
+  if(btnCad) btnCad.style.display = 'none';
   renderChatMsgs(cid);
   renderChatContacts();
 }
@@ -621,6 +625,22 @@ async function verPerfilCliente(){
       <button class="btn btn-ghost" style="flex:1" onclick="editarCliente('${c.id}');closeModal('perfil-cliente')">✏️ Editar</button>
       <button class="btn btn-primary" style="flex:1" onclick="closeModal('perfil-cliente')">💬 Fechar</button>
     </div>`;
+}
+
+
+// ── CADASTRAR CLIENTE PELO CHAT ──
+function abrirCadastroClienteChat(){
+  if(!activeChatId) return;
+  const num = activeChatId.includes('-') ? '' : activeChatId;
+  const tel = document.getElementById('mc-tel');
+  if(tel) tel.value = num.replace(/^55/,'');
+  window._afterSalvarCliente = async ()=>{
+    await loadClientes();
+    renderChatContacts();
+    const c = allClientes.find(x=>(x.telefone||'').replace(/\D/g,'').slice(-11) === num.slice(-11));
+    if(c){ activeChatId = c.id; abrirChat(c.id); }
+  };
+  openModal('cliente');
 }
 
 function setMsg(t){ const i=document.getElementById('chat-msg-input'); if(i){i.value=t;i.focus();} }
