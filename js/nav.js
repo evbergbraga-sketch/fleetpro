@@ -19,6 +19,10 @@ function goPage(id, navEl){
   const cfg=PAGE_CFG[id];
   if(!cfg) return;
   if(!cfg.roles.includes(currentPerfil?.perfil)) id='denied';
+
+  // Remove tema Royal ao sair do painel investidor
+  if(id !== 'investidores' && window._invLeave) window._invLeave();
+
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const pageEl=document.getElementById('page-'+id);
@@ -103,7 +107,6 @@ function renderDashboard(){
       else { alertCard.classList.remove('stat-alert'); alertVal.style.color='#16a34a'; }
     }
   }
-
 
   const dl=document.getElementById('dash-loc');
   dl.innerHTML=meusLocs.length?meusLocs.map(l=>{
