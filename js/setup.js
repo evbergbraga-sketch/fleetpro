@@ -306,52 +306,6 @@ async function criarUsuarioAdmin(){
 }
 
 // ══ ALTERAR SENHA ══
-async function alterarSenha(){
-  const nova   = document.getElementById('nova-senha')?.value;
-  const conf   = document.getElementById('conf-senha')?.value;
-  const errEl  = document.getElementById('senha-err');
-  const okEl   = document.getElementById('senha-ok');
-  if(errEl) errEl.style.display='none';
-  if(okEl)  okEl.style.display='none';
-
-  if(!nova||!conf){
-    if(errEl){errEl.textContent='Preencha os dois campos.';errEl.style.display='block';} return;
-  }
-  if(nova.length < 6){
-    if(errEl){errEl.textContent='A senha deve ter no mínimo 6 caracteres.';errEl.style.display='block';} return;
-  }
-  if(nova !== conf){
-    if(errEl){errEl.textContent='As senhas não coincidem.';errEl.style.display='block';} return;
-  }
-
-  const btn = document.getElementById('btn-alterar-senha');
-  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
-
-  const {error} = await sb.auth.updateUser({password: nova});
-
-  if(error){
-    if(errEl){errEl.textContent='❌ '+error.message;errEl.style.display='block';}
-    if(btn){btn.disabled=false;btn.textContent='🔐 Salvar nova senha';}
-    return;
-  }
-
-  if(okEl){okEl.textContent='✅ Senha alterada com sucesso!';okEl.style.display='block';}
-  notify('Senha alterada com sucesso!','success');
-  if(btn){btn.disabled=false;btn.textContent='🔐 Salvar nova senha';}
-  // Limpa campos
-  const el1=document.getElementById('nova-senha'); if(el1) el1.value='';
-  const el2=document.getElementById('conf-senha'); if(el2) el2.value='';
-}
-
-// ══ TOGGLE SENHA (mostrar/ocultar) ══
-function toggleSenhaVisivel(inputId, btnId){
-  const input = document.getElementById(inputId);
-  const btn   = document.getElementById(btnId);
-  if(!input) return;
-  const isPass = input.type === 'password';
-  input.type = isPass ? 'text' : 'password';
-  if(btn) btn.textContent = isPass ? '🙈' : '👁️';
-}
 
 // ══ MODAL MEU PERFIL ══
 function abrirModalMeuPerfil(){
