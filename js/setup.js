@@ -198,6 +198,79 @@ document.addEventListener('click', e=>{
   }
 });
 
+// ══ ALTERAR SENHA (usuário logado) ══
+async function alterarSenha(){
+  const atual  = document.getElementById('p-senha-atual')?.value;
+  const nova   = document.getElementById('p-senha-nova')?.value;
+  const conf   = document.getElementById('p-senha-conf')?.value;
+  const errEl  = document.getElementById('p-senha-err');
+  const okEl   = document.getElementById('p-senha-ok');
+
+  if(errEl) errEl.style.display='none';
+  if(okEl)  okEl.style.display='none';
+
+  if(!nova||!conf){ _senhaErr('Preencha todos os campos.',errEl); return; }
+  if(nova.length<6){ _senhaErr('A nova senha deve ter pelo menos 6 caracteres.',errEl); return; }
+  if(nova!==conf){ _senhaErr('A confirmação não coincide com a nova senha.',errEl); return; }
+
+  const btn = document.getElementById('btn-alterar-senha');
+  if(btn){ btn.disabled=true; btn.textContent='Salvando...'; }
+
+  try{
+    // Reautentica com a senha atual primeiro
+    const {error:reErr} = await sb.auth.signInWithPassword({
+      email: currentUser.email, password: atual
+    });
+    if(reErr){ _senhaErr('Senha atual incorreta.',errEl); return; }
+
+    // Atualiza para a nova senha
+    const {error} = await sb.auth.updateUser({password: nova});
+    if(error) throw error;
+
+    if(okEl){ okEl.textContent='✅ Senha alterada com sucesso!'; okEl.style.display='block'; }
+    notify('Senha alterada com sucesso!','success');
+    ['p-senha-atual','p-senha-nova','p-senha-conf'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.value='';
+    });
+  }catch(e){
+    _senhaErr('Erro: '+e.message, errEl);
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='🔒 Alterar senha'; }
+  }
+}
+
+function abrirMinhaConta(){
+  const p = currentPerfil;
+  const u = currentUser;
+  if(!p||!u) return;
+  const ini = (p.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  const el = document.getElementById('mc-avatar'); if(el) el.textContent=ini;
+  const nm = document.getElementById('mc-nome-display'); if(nm) nm.textContent=p.nome||'—';
+  const em = document.getElementById('mc-email-display'); if(em) em.textContent=u.email||'—';
+  const rl = document.getElementById('mc-role-display');
+  if(rl){ rl.innerHTML=`<span class="role-chip ${p.perfil}" style="font-size:10px">${ROLE_LABELS[p.perfil]||p.perfil}</span>`; }
+  // Limpa campos
+  ['p-senha-atual','p-senha-nova','p-senha-conf'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const errEl=document.getElementById('p-senha-err'); if(errEl) errEl.style.display='none';
+  const okEl=document.getElementById('p-senha-ok');   if(okEl)  okEl.style.display='none';
+  document.getElementById('m-minha-conta').classList.add('show');
+}
+
+function _senhaErr(msg, el){
+  if(!el) return;
+  el.textContent=msg; el.style.display='block';
+}
+
+// Toggle mostrar/ocultar senha
+function toggleSenhaVisivel(inputId, btnId){
+  const input = document.getElementById(inputId);
+  const btn   = document.getElementById(btnId);
+  if(!input) return;
+  const visivel = input.type==='text';
+  input.type = visivel ? 'password' : 'text';
+  if(btn) btn.textContent = visivel ? '👁️' : '🙈';
+}
+
 // ══ CRIAR USUÁRIO (só admin) ══
 async function criarUsuarioAdmin(){
   if(currentPerfil?.perfil !== 'admin'){
@@ -230,4 +303,71 @@ async function criarUsuarioAdmin(){
   ['r-nome','r-email','r-senha'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
+}
+
+// ══ ALTERAR SENHA ══
+async function alterarSenha(){
+  const nova   = document.getElementById('nova-senha')?.value;
+  const conf   = document.getElementById('conf-senha')?.value;
+  const errEl  = document.getElementById('senha-err');
+  const okEl   = document.getElementById('senha-ok');
+  if(errEl) errEl.style.display='none';
+  if(okEl)  okEl.style.display='none';
+
+  if(!nova||!conf){
+    if(errEl){errEl.textContent='Preencha os dois campos.';errEl.style.display='block';} return;
+  }
+  if(nova.length < 6){
+    if(errEl){errEl.textContent='A senha deve ter no mínimo 6 caracteres.';errEl.style.display='block';} return;
+  }
+  if(nova !== conf){
+    if(errEl){errEl.textContent='As senhas não coincidem.';errEl.style.display='block';} return;
+  }
+
+  const btn = document.getElementById('btn-alterar-senha');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+
+  const {error} = await sb.auth.updateUser({password: nova});
+
+  if(error){
+    if(errEl){errEl.textContent='❌ '+error.message;errEl.style.display='block';}
+    if(btn){btn.disabled=false;btn.textContent='🔐 Salvar nova senha';}
+    return;
+  }
+
+  if(okEl){okEl.textContent='✅ Senha alterada com sucesso!';okEl.style.display='block';}
+  notify('Senha alterada com sucesso!','success');
+  if(btn){btn.disabled=false;btn.textContent='🔐 Salvar nova senha';}
+  // Limpa campos
+  const el1=document.getElementById('nova-senha'); if(el1) el1.value='';
+  const el2=document.getElementById('conf-senha'); if(el2) el2.value='';
+}
+
+// ══ TOGGLE SENHA (mostrar/ocultar) ══
+function toggleSenhaVisivel(inputId, btnId){
+  const input = document.getElementById(inputId);
+  const btn   = document.getElementById(btnId);
+  if(!input) return;
+  const isPass = input.type === 'password';
+  input.type = isPass ? 'text' : 'password';
+  if(btn) btn.textContent = isPass ? '🙈' : '👁️';
+}
+
+// ══ MODAL MEU PERFIL ══
+function abrirModalMeuPerfil(){
+  const p = currentPerfil;
+  const u = currentUser;
+  if(!p||!u) return;
+
+  const ini = (p.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  const av = document.getElementById('mp-avatar'); if(av) av.textContent=ini;
+  const nm = document.getElementById('mp-nome');   if(nm) nm.textContent=p.nome||'—';
+  const em = document.getElementById('mp-email');  if(em) em.textContent=u.email||'—';
+  const ro = document.getElementById('mp-role');   if(ro){ ro.textContent=ROLE_LABELS[p.perfil]||p.perfil; ro.className='role-chip '+p.perfil; }
+
+  // Limpa campos e feedbacks
+  ['nova-senha','conf-senha'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['senha-err','senha-ok'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+
+  document.getElementById('m-meu-perfil').classList.add('show');
 }
