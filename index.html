@@ -255,6 +255,25 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
         <div class="card"><table><thead><tr><th>Cliente</th><th>CPF</th><th>Telefone</th><th>CNH validade</th><th>Status CNH</th><th></th></tr></thead><tbody id="tb-clientes"></tbody></table></div>
       </div>
 
+      <!-- LOCAÇÕES EM ANDAMENTO -->
+      <div class="page" id="page-locacoes">
+        <div class="card">
+          <table>
+            <thead>
+              <tr>
+                <th>Veículo</th>
+                <th>Cliente</th>
+                <th>Início</th>
+                <th>Devolução</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tb-locacoes"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- RESERVAS -->
       <div class="page" id="page-reservas">
         <div class="card">
@@ -898,6 +917,17 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
   </div>
 </div>
 
+<!-- MODAL DETALHES DA LOCAÇÃO -->
+<div class="modal-overlay" id="m-locacao-detalhe">
+  <div class="modal" style="max-width:700px;max-height:90vh;overflow-y:auto">
+    <div class="modal-header">
+      <div class="modal-title">📋 Detalhes da Locação</div>
+      <button class="modal-close" onclick="closeModal('locacao-detalhe')">✕</button>
+    </div>
+    <div id="locacao-detalhe-body"></div>
+  </div>
+</div>
+
 <!-- MODAL NOVA RESERVA -->
 <div class="modal-overlay" id="m-reserva">
   <div class="modal" style="max-width:500px">
@@ -1001,6 +1031,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
 <script src="js/historico.js"></script>
 <script src="js/contratos.js"></script>
 <script src="js/reservas.js"></script>
+<script src="js/locacoes.js"></script>
 <script src="js/chat.js"></script>
 <script src="js/investidores.js"></script>
 <script src="js/boot.js"></script>
