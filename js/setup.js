@@ -125,15 +125,17 @@ function iniciarApp(){
 
   goLayer('app');
 
-  // ── Investidor vai direto para o painel, sem passar pelo dashboard ──
   if(p.perfil === 'investidor'){
+    // Investidor: carrega dados PRIMEIRO, só depois renderiza o painel
     _invPage = 'inv-dashboard';
-    goPage('investidores');
+    goPage('investidores'); // mostra a página (vai aparecer loading)
+    carregarTudo().then(()=>{
+      renderInvestidores(); // re-renderiza com dados completos
+    });
   } else {
     goPage('dashboard');
+    carregarTudo();
   }
-
-  carregarTudo();
 
   // ── Inject botão hamburguer no topbar (mobile) ──
   _injectHamburguer();
