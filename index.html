@@ -26,16 +26,18 @@
 create extension if not exists "uuid-ossp";
 create table perfis (id uuid primary key references auth.users(id) on delete cascade, nome text not null, email text not null, perfil text not null default 'atendente' check (perfil in ('admin','atendente','investidor')), ativo boolean default true, created_at timestamptz default now());
 create table clientes (id uuid primary key default uuid_generate_v4(), nome text not null, cpf text unique not null, email text, telefone text, cnh text, cnh_validade date, endereco text, observacoes text, created_at timestamptz default now());
-create table veiculos (id uuid primary key default uuid_generate_v4(), tipo text not null check (tipo in ('carro','moto')), marca text not null, modelo text not null, placa text unique not null, ano int, cor text, cambio text, km_atual int default 0, diaria numeric(10,2) not null, status text default 'disponivel' check (status in ('disponivel','alugado','manutencao')), observacoes text, created_at timestamptz default now());
+create table veiculos (id uuid primary key default uuid_generate_v4(), tipo text not null check (tipo in ('carro','moto')), marca text not null, modelo text not null, placa text unique not null, ano int, cor text, cambio text, km_atual int default 0, diaria numeric(10,2) not null, status text default 'disponivel' check (status in ('disponivel','alugado','manutencao','reservado')), observacoes text, created_at timestamptz default now());
 create table locacoes (id uuid primary key default uuid_generate_v4(), veiculo_id uuid references veiculos(id), cliente_id uuid references clientes(id), data_inicio date not null, data_fim date not null, km_inicial int, km_final int, diaria numeric(10,2), total numeric(10,2), status text default 'ativa' check (status in ('ativa','encerrada','cancelada')), observacoes text, criado_por uuid references auth.users(id), created_at timestamptz default now());
 create table manutencoes (id uuid primary key default uuid_generate_v4(), veiculo_id uuid references veiculos(id), tipo text not null, descricao text, custo numeric(10,2), data_inicio date not null, data_fim date, oficina text, status text default 'pendente' check (status in ('pendente','em_andamento','concluida')), created_at timestamptz default now());
 create table wpp_mensagens (id uuid primary key default uuid_generate_v4(), cliente_id uuid references clientes(id), numero text not null, texto text, tipo text default 'text' check (tipo in ('text','image','audio','document')), direcao text default 'saida' check (direcao in ('saida','entrada')), media_url text, created_at timestamptz default now());
+create table reservas (id uuid primary key default uuid_generate_v4(), cliente_id uuid references clientes(id), veiculo_id uuid references veiculos(id), data_inicio timestamptz not null, data_fim timestamptz not null, valor_pago numeric(10,2) default 0, observacoes text, status text default 'ativa' check (status in ('ativa','convertida','cancelada','expirada')), criado_por uuid references auth.users(id), created_at timestamptz default now());
 alter table perfis disable row level security;
 alter table clientes disable row level security;
 alter table veiculos disable row level security;
 alter table locacoes disable row level security;
 alter table manutencoes disable row level security;
 alter table wpp_mensagens disable row level security;
+alter table reservas disable row level security;
 create or replace function handle_new_user() returns trigger as $$ begin insert into perfis (id, nome, email, perfil) values (new.id, coalesce(new.raw_user_meta_data->>'nome', split_part(new.email,'@',1)), new.email, coalesce(new.raw_user_meta_data->>'perfil', 'atendente')); return new; end; $$ language plpgsql security definer;
 create trigger on_auth_user_created after insert on auth.users for each row execute function handle_new_user();
 insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,status) values ('carro','Honda','Civic','ABC-1234',2022,'Prata','Automatico',32100,180,'disponivel'),('carro','Chevrolet','Onix','DEF-5678',2021,'Branco','Manual',48900,120,'disponivel'),('moto','Honda','CB 300','XYZ-9988',2023,'Preta','Manual',8400,90,'disponivel');</pre>
@@ -116,21 +118,22 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
     <div style="font-size:12px;color:#52525B">Carregando sistema...</div>
     <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
   </div>
+
   <aside class="sidebar">
     <div class="logo">
-  <div class="logo-mark">
-    <div style="width:30px;height:30px;background:#2563EB;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-      <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
-        <rect x="2" y="2" width="3" height="10" rx="1" fill="white"/>
-        <rect x="2" y="2" width="8" height="3" rx="1" fill="white"/>
-        <rect x="2" y="6" width="6" height="2.5" rx="1" fill="white"/>
-        <rect x="3" y="5" width="8" height="1.5" rx="0.75" fill="#4ADE80"/>
-      </svg>
+      <div class="logo-mark">
+        <div style="width:30px;height:30px;background:#2563EB;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+            <rect x="2" y="2" width="3" height="10" rx="1" fill="white"/>
+            <rect x="2" y="2" width="8" height="3" rx="1" fill="white"/>
+            <rect x="2" y="6" width="6" height="2.5" rx="1" fill="white"/>
+            <rect x="3" y="5" width="8" height="1.5" rx="0.75" fill="#4ADE80"/>
+          </svg>
+        </div>
+        <span style="color:#F4F4F5">Fleet<span style="color:#60A5FA">Pro</span></span>
+      </div>
+      <div class="logo-sub">Plataforma de locadoras</div>
     </div>
-    <span style="color:#F4F4F5">Fleet<span style="color:#60A5FA">Pro</span></span>
-  </div>
-  <div class="logo-sub">Plataforma de locadoras</div>
-</div>
     <nav id="sidebar-nav"></nav>
     <div class="sidebar-footer">
       <div class="user-pill">
@@ -159,6 +162,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
         <button class="btn btn-primary" id="primary-action" style="display:none">+ Ação</button>
       </div>
     </header>
+
     <div class="content scrollbar-thin">
 
       <!-- DASHBOARD -->
@@ -173,10 +177,22 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
           <div class="stat-card" style="--accent-color:#0891b2;display:flex;align-items:center;padding:14px 20px"><div class="stat-icon" style="position:relative;font-size:18px">📋</div><div style="flex:1"><div class="stat-label">Locações ativas em andamento</div><div class="stat-val" id="st-locacoes" style="color:#0891b2;font-size:24px;margin:2px 0">—</div></div></div>
         </div>
         <div class="grid2">
-          <div class="card"><div class="card-header"><span class="card-title">Locações em andamento</span></div>
-            <table><thead><tr><th>Veículo</th><th>Cliente</th><th>Devolução</th><th>Status</th></tr></thead><tbody id="dash-loc"></tbody></table></div>
-          <div class="card"><div class="card-header"><span class="card-title">Manutenções</span></div>
-            <table><thead><tr><th>Veículo</th><th>Serviço</th><th>Status</th></tr></thead><tbody id="dash-man"></tbody></table></div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Locações em andamento</span></div>
+            <table><thead><tr><th>Veículo</th><th>Cliente</th><th>Devolução</th><th>Status</th></tr></thead><tbody id="dash-loc"></tbody></table>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Manutenções</span></div>
+            <table><thead><tr><th>Veículo</th><th>Serviço</th><th>Status</th></tr></thead><tbody id="dash-man"></tbody></table>
+          </div>
+        </div>
+        <!-- RESERVAS NO DASHBOARD -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-header">
+            <span class="card-title">🗓️ Reservas ativas</span>
+            <button class="btn btn-ghost" style="font-size:11px" onclick="goPage('reservas')">Ver todas →</button>
+          </div>
+          <table><thead><tr><th>Veículo</th><th>Cliente</th><th>Retirada</th><th>Prazo</th></tr></thead><tbody id="dash-reservas"></tbody></table>
         </div>
       </div>
 
@@ -184,7 +200,13 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
       <div class="page" id="page-carros">
         <div class="input-group">
           <input class="input-flex" type="text" id="s-carros" placeholder="🔍  Buscar modelo, placa..." oninput="renderVeiculos()">
-          <select id="f-carros" onchange="renderVeiculos()"><option value="">Todos</option><option value="disponivel">Disponível</option><option value="alugado">Alugado</option><option value="manutencao">Manutenção</option></select>
+          <select id="f-carros" onchange="renderVeiculos()">
+            <option value="">Todos</option>
+            <option value="disponivel">Disponível</option>
+            <option value="reservado">Reservado</option>
+            <option value="alugado">Alugado</option>
+            <option value="manutencao">Manutenção</option>
+          </select>
           <button class="btn btn-primary" id="btn-add-carro" onclick="openModal('veiculo','carro')">+ Cadastrar</button>
         </div>
         <div class="card"><table><thead><tr><th>Veículo</th><th>Placa</th><th>Ano</th><th>Km</th><th>Diária</th><th>Status</th><th></th></tr></thead><tbody id="tb-carros"></tbody></table></div>
@@ -194,7 +216,13 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
       <div class="page" id="page-motos">
         <div class="input-group">
           <input class="input-flex" type="text" id="s-motos" placeholder="🔍  Buscar modelo, placa..." oninput="renderVeiculos()">
-          <select id="f-motos" onchange="renderVeiculos()"><option value="">Todos</option><option value="disponivel">Disponível</option><option value="alugado">Alugado</option><option value="manutencao">Manutenção</option></select>
+          <select id="f-motos" onchange="renderVeiculos()">
+            <option value="">Todos</option>
+            <option value="disponivel">Disponível</option>
+            <option value="reservado">Reservado</option>
+            <option value="alugado">Alugado</option>
+            <option value="manutencao">Manutenção</option>
+          </select>
           <button class="btn btn-primary" id="btn-add-moto" onclick="openModal('veiculo','moto')">+ Cadastrar</button>
         </div>
         <div class="card"><table><thead><tr><th>Veículo</th><th>Placa</th><th>Ano</th><th>Km</th><th>Diária</th><th>Status</th><th></th></tr></thead><tbody id="tb-motos"></tbody></table></div>
@@ -209,8 +237,10 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
             <table><thead><tr><th>Veículo</th><th>Placa</th></tr></thead><tbody id="tb-hist-veic"></tbody></table>
           </div>
           <div class="card">
-            <div class="card-header"><div><div class="card-title" id="hist-title">Selecione um veículo</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Histórico completo</div></div>
-            <button class="btn btn-ghost" style="font-size:11px" id="btn-add-maint" onclick="openModal('manutencao')">+ Manutenção</button></div>
+            <div class="card-header">
+              <div><div class="card-title" id="hist-title">Selecione um veículo</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Histórico completo</div></div>
+              <button class="btn btn-ghost" style="font-size:11px" id="btn-add-maint" onclick="openModal('manutencao')">+ Manutenção</button>
+            </div>
             <div class="timeline" id="hist-tl"><p style="color:var(--muted2);font-size:13px">← Selecione um veículo</p></div>
           </div>
         </div>
@@ -223,6 +253,26 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
           <button class="btn btn-primary" id="btn-add-cliente" onclick="openModal('cliente')">+ Novo cliente</button>
         </div>
         <div class="card"><table><thead><tr><th>Cliente</th><th>CPF</th><th>Telefone</th><th>CNH validade</th><th>Status CNH</th><th></th></tr></thead><tbody id="tb-clientes"></tbody></table></div>
+      </div>
+
+      <!-- RESERVAS -->
+      <div class="page" id="page-reservas">
+        <div class="card">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Veículo</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Valor pago</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tb-reservas"></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- CONTRATOS -->
@@ -261,6 +311,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
                 <div class="sign-block"><div class="sign-line"></div><span id="ct-cli2">Locatário</span></div>
               </div>
               <p style="text-align:center;margin-top:12px;font-size:10px;color:#999"><span id="ct-data"></span></p>
+              <div id="ct-aviso-reserva" style="display:none;margin-top:12px;padding:8px 12px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;font-size:11px;color:#92400e;"></div>
             </div>
           </div>
         </div>
@@ -281,8 +332,9 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
             </div>
             <div class="cal-grid" id="cal-grid"></div>
             <div style="display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--muted)">
-              <span><span style="display:inline-block;width:8px;height:8px;background:var(--blue);border-radius:50%;margin-right:4px"></span>Carro</span>
-              <span><span style="display:inline-block;width:8px;height:8px;background:var(--accent);border-radius:50%;margin-right:4px"></span>Moto</span>
+              <span><span style="display:inline-block;width:8px;height:8px;background:#3b82f6;border-radius:50%;margin-right:4px"></span>Carro</span>
+              <span><span style="display:inline-block;width:8px;height:8px;background:#f5a623;border-radius:50%;margin-right:4px"></span>Moto</span>
+              <span><span style="display:inline-block;width:8px;height:8px;background:#2563EB;border-radius:50%;margin-right:4px"></span>Reserva</span>
             </div>
           </div>
           <div class="card">
@@ -350,7 +402,8 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
               </div>
               <div id="chat-respostas-rapidas"></div>
             </div>
-            <div><div class="cst">Assinatura</div>
+            <div>
+              <div class="cst">Assinatura</div>
               <div class="form-group" style="margin-bottom:8px"><label>Nome da locadora</label><input type="text" id="wpp-nome-locadora" value="FleetPro Locadora" style="width:100%;font-size:12px"></div>
               <div class="form-group" style="margin-bottom:8px"><label>Assinatura automática</label><textarea id="wpp-assinatura" rows="2" style="width:100%;font-size:12px;resize:none">— Equipe FleetPro 🚗🏍️</textarea></div>
               <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-bottom:8px"><input type="checkbox" id="wpp-usar-assin" checked> Adicionar assinatura</label>
@@ -389,7 +442,9 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
   </main>
 </div>
 
-<!-- MODAL CRIAR USUÁRIO (só admin dentro do sistema) -->
+<!-- ═══════════════════ MODAIS ═══════════════════ -->
+
+<!-- MODAL CRIAR USUÁRIO -->
 <div class="modal-overlay" id="m-criar-usuario">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Criar Usuário</div><button class="modal-close" onclick="closeModal('criar-usuario')">✕</button></div>
@@ -496,21 +551,6 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
   </div>
 </div>
 
-<div class="notify" id="notify"></div>
-
-<!-- Scripts — ordem importa! -->
-<script src="js/config.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/setup.js"></script>
-<script src="js/nav.js"></script>
-<script src="js/veiculos.js"></script>
-<script src="js/clientes.js"></script>
-<script src="js/historico.js"></script>
-<script src="js/contratos.js"></script>
-<script src="js/chat.js"></script>
-<script src="js/investidores.js"></script>
-<script src="js/boot.js"></script>
-
 <!-- MODAL EDITAR VEÍCULO -->
 <div class="modal-overlay" id="m-editar-veiculo">
   <div class="modal">
@@ -526,7 +566,14 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
       <div class="form-group"><label>Câmbio</label><select id="ev-cambio" style="width:100%"><option value="Automatico">Automático</option><option value="Manual">Manual</option></select></div>
       <div class="form-group"><label>Km atual</label><input type="number" id="ev-km" style="width:100%"></div>
       <div class="form-group"><label>Diária (R$)</label><input type="number" id="ev-diaria" style="width:100%"></div>
-      <div class="form-group"><label>Status</label><select id="ev-status" style="width:100%"><option value="disponivel">✅ Disponível</option><option value="alugado">🔴 Alugado</option><option value="manutencao">🔧 Manutenção</option></select></div>
+      <div class="form-group"><label>Status</label>
+        <select id="ev-status" style="width:100%">
+          <option value="disponivel">✅ Disponível</option>
+          <option value="reservado">🗓️ Reservado</option>
+          <option value="alugado">🔴 Alugado</option>
+          <option value="manutencao">🔧 Manutenção</option>
+        </select>
+      </div>
       <div class="form-group full"><label>📈 Investidor (proprietário)</label><select id="ev-investidor" style="width:100%"><option value="">— Nenhum (frota própria)</option></select></div>
       <div class="form-group full"><label>Observações</label><textarea id="ev-obs" rows="2" style="width:100%;resize:none"></textarea></div>
     </div>
@@ -537,7 +584,45 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
   </div>
 </div>
 
-
+<!-- MODAL NOVA RESERVA -->
+<div class="modal-overlay" id="m-reserva">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <div class="modal-title">🗓️ Nova Reserva</div>
+      <button class="modal-close" onclick="closeModal('reserva')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Cliente</label>
+        <select id="res-cli" style="width:100%"></select>
+      </div>
+      <div class="form-group full">
+        <label>Veículo desejado</label>
+        <select id="res-vei" style="width:100%"></select>
+      </div>
+      <div class="form-group">
+        <label>Data/hora de retirada</label>
+        <input type="datetime-local" id="res-ini" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label>Data/hora de devolução</label>
+        <input type="datetime-local" id="res-fim" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label>Valor já pago (R$)</label>
+        <input type="number" id="res-valor" placeholder="0,00" step="0.01" min="0" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label>Observações</label>
+        <input type="text" id="res-obs" placeholder="Ex: cliente confirmado, caução..." style="width:100%">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('reserva')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarReserva()">✓ Confirmar reserva</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL RESPOSTAS RÁPIDAS -->
 <div class="modal-overlay" id="m-respostas-rapidas">
@@ -557,64 +642,6 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
     </div>
   </div>
 </div>
-
-<script>
-(function(){
-  const RQ_KEY = 'fp_rq';
-  const DEF = ['Olá! Como posso ajudar? 😊','Carros a partir de R$ 120/dia. Motos a partir de R$ 60/dia.','Preciso de CNH, CPF e comprovante de residência.','Posso gerar o contrato agora! Quando retira o veículo?','Devolução das 8h às 19h.','Veículo entregue! Obrigado pela preferência 🚗✅'];
-  
-  function getRQ(){ try{ return JSON.parse(localStorage.getItem(RQ_KEY))||DEF; }catch(_){ return DEF; } }
-  function saveRQ(lista){ localStorage.setItem(RQ_KEY, JSON.stringify(lista)); }
-
-  window.renderRQ = function(){
-    const el = document.getElementById('chat-respostas-rapidas'); if(!el) return;
-    el.innerHTML = getRQ().map(r=>`<div class="qr" onclick="setMsg(this.dataset.t)" data-t="${r.replace(/"/g,'&quot;')}">${r}</div>`).join('');
-  };
-
-  window.gerenciarRespostas = function(){
-    const lista = getRQ();
-    const el = document.getElementById('rq-lista'); if(!el) return;
-    el.innerHTML = lista.map((r,i)=>`
-      <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg2);border-radius:8px;border:1px solid var(--border2)">
-        <div style="flex:1;font-size:13px;cursor:pointer" onclick="editarRQ(${i})" title="Clique para editar">${r}</div>
-        <button onclick="excluirRQ(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 6px;flex-shrink:0">✕</button>
-      </div>`).join('');
-    document.getElementById('m-respostas-rapidas').classList.add('show');
-  };
-
-  window.editarRQ = function(idx){
-    const lista = getRQ();
-    const nova = prompt('Editar resposta:', lista[idx]);
-    if(nova === null || !nova.trim()) return;
-    lista[idx] = nova.trim();
-    saveRQ(lista);
-    renderRQ();
-    gerenciarRespostas();
-  };
-
-  window.excluirRQ = function(idx){
-    const lista = getRQ();
-    lista.splice(idx, 1);
-    saveRQ(lista);
-    renderRQ();
-    gerenciarRespostas();
-  };
-
-  window.adicionarRQ = function(){
-    const inp = document.getElementById('rq-nova');
-    const txt = inp?.value.trim(); if(!txt) return;
-    const lista = getRQ();
-    lista.push(txt);
-    saveRQ(lista);
-    inp.value = '';
-    renderRQ();
-    gerenciarRespostas();
-  };
-
-  document.addEventListener('DOMContentLoaded', ()=>setTimeout(window.renderRQ, 800));
-})();
-</script>
-
 
 <!-- MODAL PAGAMENTO INVESTIDOR -->
 <div class="modal-overlay" id="m-pagamento-inv">
@@ -647,6 +674,60 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
     </div>
   </div>
 </div>
+
+<div class="notify" id="notify"></div>
+
+<!-- Scripts — ordem importa! -->
+<script src="js/config.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/setup.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/veiculos.js"></script>
+<script src="js/clientes.js"></script>
+<script src="js/historico.js"></script>
+<script src="js/contratos.js"></script>
+<script src="js/reservas.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/investidores.js"></script>
+<script src="js/boot.js"></script>
+
+<script>
+(function(){
+  const RQ_KEY = 'fp_rq';
+  const DEF = ['Olá! Como posso ajudar? 😊','Carros a partir de R$ 120/dia. Motos a partir de R$ 60/dia.','Preciso de CNH, CPF e comprovante de residência.','Posso gerar o contrato agora! Quando retira o veículo?','Devolução das 8h às 19h.','Veículo entregue! Obrigado pela preferência 🚗✅'];
+  function getRQ(){ try{ return JSON.parse(localStorage.getItem(RQ_KEY))||DEF; }catch(_){ return DEF; } }
+  function saveRQ(lista){ localStorage.setItem(RQ_KEY, JSON.stringify(lista)); }
+  window.renderRQ = function(){
+    const el = document.getElementById('chat-respostas-rapidas'); if(!el) return;
+    el.innerHTML = getRQ().map(r=>`<div class="qr" onclick="setMsg(this.dataset.t)" data-t="${r.replace(/"/g,'&quot;')}">${r}</div>`).join('');
+  };
+  window.gerenciarRespostas = function(){
+    const lista = getRQ();
+    const el = document.getElementById('rq-lista'); if(!el) return;
+    el.innerHTML = lista.map((r,i)=>`
+      <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg2);border-radius:8px;border:1px solid var(--border2)">
+        <div style="flex:1;font-size:13px;cursor:pointer" onclick="editarRQ(${i})" title="Clique para editar">${r}</div>
+        <button onclick="excluirRQ(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 6px;flex-shrink:0">✕</button>
+      </div>`).join('');
+    document.getElementById('m-respostas-rapidas').classList.add('show');
+  };
+  window.editarRQ = function(idx){
+    const lista = getRQ();
+    const nova = prompt('Editar resposta:', lista[idx]);
+    if(nova === null || !nova.trim()) return;
+    lista[idx] = nova.trim(); saveRQ(lista); renderRQ(); gerenciarRespostas();
+  };
+  window.excluirRQ = function(idx){
+    const lista = getRQ(); lista.splice(idx, 1); saveRQ(lista); renderRQ(); gerenciarRespostas();
+  };
+  window.adicionarRQ = function(){
+    const inp = document.getElementById('rq-nova');
+    const txt = inp?.value.trim(); if(!txt) return;
+    const lista = getRQ(); lista.push(txt); saveRQ(lista); inp.value = ''; renderRQ(); gerenciarRespostas();
+  };
+  document.addEventListener('DOMContentLoaded', ()=>setTimeout(window.renderRQ, 800));
+})();
+</script>
 
 </body>
 </html>
