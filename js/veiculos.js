@@ -1,7 +1,8 @@
 // veiculos.js — Gestão de veículos
 
 function statusBadge(s){
-  return s==='disponivel' ? '<span class="badge badge-green">Disponível</span>'
+  return s==='preparacao' ? '<span class="badge badge-blue">⚙️ Em preparação</span>'
+    : s==='disponivel' ? '<span class="badge badge-green">Disponível</span>'
        : s==='alugado'    ? '<span class="badge badge-red">Alugado</span>'
        : s==='reservado'  ? '<span class="badge badge-blue">Reservado</span>'
                           : '<span class="badge badge-yellow">Manutenção</span>';
@@ -57,6 +58,7 @@ function editarVeiculo(id){
   document.getElementById('ev-km').value    = v.km_atual||0;
   document.getElementById('ev-diaria').value= v.diaria||'';
   document.getElementById('ev-status').value= v.status||'disponivel';
+  document.getElementById('ev-data-entrada').value= v.data_entrada||'';
   document.getElementById('ev-obs').value   = v.observacoes||'';
   preencherSelectInvestidores('ev-investidor').then(()=>{
     const sel = document.getElementById('ev-investidor');
@@ -79,6 +81,7 @@ async function atualizarVeiculo(){
     km_atual:     parseInt(document.getElementById('ev-km').value)||0,
     diaria:       parseFloat(document.getElementById('ev-diaria').value)||0,
     status:       document.getElementById('ev-status').value,
+    data_entrada: document.getElementById('ev-data-entrada').value||null,
     observacoes:  document.getElementById('ev-obs').value.trim(),
     investidor_id:document.getElementById('ev-investidor')?.value||null,
   };
