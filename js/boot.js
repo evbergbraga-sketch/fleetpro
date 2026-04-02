@@ -23,18 +23,21 @@ window.addEventListener('DOMContentLoaded', async()=>{
     if(error) throw error;
     if(session?.user){
       await carregarPerfil(session.user);
-      // Restaura página que estava aberta antes do reload
-      const lastPage = sessionStorage.getItem('fp_last_page');
-      const lastChat = sessionStorage.getItem('fp_last_chat');
-      sessionStorage.removeItem('fp_last_page');
-      sessionStorage.removeItem('fp_last_chat');
-      if(lastPage){
-        setTimeout(()=>{
-          goPage(lastPage);
-          if(lastPage==='chat' && lastChat){
-            setTimeout(()=>abrirChat(lastChat), 500);
-          }
-        }, 800);
+      // Investidor SEMPRE vai para o painel — nunca restaura página anterior
+      // para outros perfis, restaura a última página se disponível
+      if(currentPerfil?.perfil !== 'investidor'){
+        const lastPage = sessionStorage.getItem('fp_last_page');
+        const lastChat = sessionStorage.getItem('fp_last_chat');
+        sessionStorage.removeItem('fp_last_page');
+        sessionStorage.removeItem('fp_last_chat');
+        if(lastPage){
+          setTimeout(()=>{
+            goPage(lastPage);
+            if(lastPage==='chat' && lastChat){
+              setTimeout(()=>abrirChat(lastChat), 500);
+            }
+          }, 800);
+        }
       }
     } else {
       goLayer('login');
