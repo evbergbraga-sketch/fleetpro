@@ -144,7 +144,8 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
         </div>
       </div>
       <div class="db-badge"><div class="db-dot"></div>Supabase conectado</div>
-      <button class="btn btn-ghost" style="width:100%;margin-top:10px;font-size:11px" onclick="fazerLogout()">↩ Sair</button>
+      <button class="btn btn-ghost" style="width:100%;margin-top:8px;font-size:11px" onclick="abrirMinhaConta()">👤 Minha conta</button>
+      <button class="btn btn-ghost" style="width:100%;margin-top:6px;font-size:11px" onclick="fazerLogout()">↩ Sair</button>
     </div>
   </aside>
 
@@ -157,7 +158,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
           <div id="busca-resultados" class="search-results" style="display:none"></div>
         </div>
         <button class="topbar-btn notif-btn" title="Notificações">🔔<div class="notif-dot"></div></button>
-        <span class="role-chip" id="role-chip">admin</span>
+        <span class="role-chip" id="role-chip" onclick="abrirModalMeuPerfil()" style="cursor:pointer" title="Meu perfil">admin</span>
         <button class="topbar-btn" onclick="carregarTudo()" title="Atualizar">↻</button>
         <button class="btn btn-primary" id="primary-action" style="display:none">+ Ação</button>
       </div>
@@ -802,6 +803,63 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
   </div>
 </div>
 
+<!-- MODAL MINHA CONTA -->
+<div class="modal-overlay" id="m-minha-conta">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">👤 Minha Conta</div>
+      <button class="modal-close" onclick="closeModal('minha-conta')">✕</button>
+    </div>
+    <div style="padding:20px">
+
+      <!-- INFO DO USUÁRIO -->
+      <div style="display:flex;align-items:center;gap:12px;background:var(--bg2);border-radius:10px;padding:14px;margin-bottom:20px">
+        <div class="avatar" id="mc-avatar" style="width:44px;height:44px;font-size:16px">?</div>
+        <div>
+          <div style="font-weight:700;font-size:15px" id="mc-nome-display">—</div>
+          <div style="font-size:12px;color:var(--muted)" id="mc-email-display">—</div>
+          <div style="font-size:11px;margin-top:2px" id="mc-role-display"></div>
+        </div>
+      </div>
+
+      <!-- ALTERAR SENHA -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted2);margin-bottom:12px">🔒 Alterar senha</div>
+
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Senha atual</label>
+        <div style="position:relative">
+          <input type="password" id="p-senha-atual" placeholder="Digite sua senha atual" style="width:100%;padding-right:40px;box-sizing:border-box">
+          <button onclick="toggleSenhaVisivel('p-senha-atual','btn-show-atual')" id="btn-show-atual" type="button"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted)">👁️</button>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Nova senha</label>
+        <div style="position:relative">
+          <input type="password" id="p-senha-nova" placeholder="Mínimo 6 caracteres" style="width:100%;padding-right:40px;box-sizing:border-box">
+          <button onclick="toggleSenhaVisivel('p-senha-nova','btn-show-nova')" id="btn-show-nova" type="button"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted)">👁️</button>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Confirmar nova senha</label>
+        <div style="position:relative">
+          <input type="password" id="p-senha-conf" placeholder="Repita a nova senha" style="width:100%;padding-right:40px;box-sizing:border-box">
+          <button onclick="toggleSenhaVisivel('p-senha-conf','btn-show-conf')" id="btn-show-conf" type="button"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted)">👁️</button>
+        </div>
+      </div>
+
+      <div id="p-senha-err" style="display:none;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px;padding:8px 12px;font-size:12px;color:#dc2626;margin-bottom:10px"></div>
+      <div id="p-senha-ok"  style="display:none;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:6px;padding:8px 12px;font-size:12px;color:#16a34a;margin-bottom:10px"></div>
+
+      <button class="btn btn-primary" id="btn-alterar-senha" style="width:100%" onclick="alterarSenha()">🔒 Alterar senha</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PERFIL CLIENTE -->
 <div class="modal-overlay" id="m-perfil-cliente">
   <div class="modal" style="max-width:500px">
@@ -913,6 +971,67 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('editar-veiculo')">Cancelar</button>
       <button class="btn btn-primary" onclick="atualizarVeiculo()">✓ Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MEU PERFIL -->
+<div class="modal-overlay" id="m-meu-perfil">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">👤 Meu Perfil</div>
+      <button class="modal-close" onclick="closeModal('meu-perfil')">✕</button>
+    </div>
+    <div style="padding:20px">
+
+      <!-- INFO DO USUÁRIO -->
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:16px;background:var(--bg2);border-radius:12px">
+        <div class="cavatar" style="width:48px;height:48px;font-size:17px;background:rgba(37,99,235,.12);color:#2563EB" id="mp-avatar">?</div>
+        <div>
+          <div style="font-size:16px;font-weight:700" id="mp-nome">—</div>
+          <div style="font-size:12px;color:var(--muted)" id="mp-email">—</div>
+          <span class="role-chip" id="mp-role" style="margin-top:4px;display:inline-block;font-size:10px">—</span>
+        </div>
+      </div>
+
+      <!-- DIVISOR -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted2);margin-bottom:12px">🔐 Alterar senha</div>
+
+      <!-- CAMPOS SENHA -->
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Nova senha</label>
+        <div style="position:relative">
+          <input type="password" id="nova-senha" placeholder="Mínimo 6 caracteres" style="width:100%;padding-right:44px;box-sizing:border-box">
+          <button type="button" id="btn-nova-senha" onclick="toggleSenhaVisivel('nova-senha','btn-nova-senha')"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted)">👁️</button>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Confirmar nova senha</label>
+        <div style="position:relative">
+          <input type="password" id="conf-senha" placeholder="Repita a nova senha" style="width:100%;padding-right:44px;box-sizing:border-box">
+          <button type="button" id="btn-conf-senha" onclick="toggleSenhaVisivel('conf-senha','btn-conf-senha')"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted)">👁️</button>
+        </div>
+      </div>
+
+      <!-- FEEDBACK -->
+      <div id="senha-err" style="display:none;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:10px 12px;font-size:12px;color:#dc2626;margin-bottom:10px"></div>
+      <div id="senha-ok"  style="display:none;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:10px 12px;font-size:12px;color:#16a34a;margin-bottom:10px"></div>
+
+      <!-- BOTÕES -->
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" id="btn-alterar-senha" onclick="alterarSenha()" style="flex:1">🔐 Salvar nova senha</button>
+        <button class="btn btn-ghost" onclick="closeModal('meu-perfil')" style="padding:8px 16px">Fechar</button>
+      </div>
+
+      <!-- LOGOUT -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border2)">
+        <button class="btn" onclick="fazerLogout()" style="width:100%;background:rgba(220,38,38,.08);color:#dc2626;border:1px solid rgba(220,38,38,.2)">
+          🚪 Sair do sistema
+        </button>
+      </div>
+
     </div>
   </div>
 </div>
