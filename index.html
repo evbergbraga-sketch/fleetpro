@@ -277,41 +277,227 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
 
       <!-- CONTRATOS -->
       <div class="page" id="page-contratos">
+
+        <!-- SELEÇÃO DE TIPO -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:600;color:var(--muted)">Tipo de contrato:</span>
+          <button class="btn-tipo-contrato active" data-tipo="moto" onclick="selecionarTipoContrato('moto')"
+            style="display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;border:2px solid var(--accent);background:var(--accent);color:#fff;font-weight:600;cursor:pointer;font-size:13px;transition:all .15s">
+            🏍️ Moto
+          </button>
+          <button class="btn-tipo-contrato" data-tipo="carro" onclick="selecionarTipoContrato('carro')"
+            style="display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;border:2px solid var(--border2);background:transparent;color:var(--muted);font-weight:600;cursor:pointer;font-size:13px;transition:all .15s">
+            🚗 Carro
+          </button>
+          <span id="c-num-display" style="margin-left:auto;font-size:12px;color:var(--muted);background:var(--bg2);padding:6px 12px;border-radius:6px;border:1px solid var(--border2)">Contrato #1</span>
+        </div>
+
+        <style>
+          .btn-tipo-contrato.active { border-color:var(--accent)!important;background:var(--accent)!important;color:#fff!important; }
+          .btn-tipo-contrato:not(.active):hover { border-color:var(--accent)!important;color:var(--accent)!important; }
+        </style>
+
         <div class="grid2">
-          <div class="card">
-            <div class="card-header"><span class="card-title">Gerar contrato</span></div>
-            <div class="form-grid">
-              <div class="form-group"><label>Cliente</label><select id="c-cli" style="width:100%"></select></div>
-              <div class="form-group"><label>Veículo disponível</label><select id="c-vei" onchange="autoFillDiaria()" style="width:100%"></select></div>
-              <div class="form-group"><label>Retirada</label><input type="date" id="c-ini" oninput="previewContrato()"></div>
-              <div class="form-group"><label>Devolução</label><input type="date" id="c-fim" oninput="previewContrato()"></div>
-              <div class="form-group"><label>Diária (R$)</label><input type="number" id="c-dia" oninput="previewContrato()"></div>
-              <div class="form-group"><label>Km inicial</label><input type="text" id="c-km" oninput="previewContrato()"></div>
-              <div class="form-group full"><label>Observações</label><textarea id="c-obs" rows="2" style="width:100%;resize:vertical" oninput="previewContrato()">Veículo em perfeito estado. Cliente responsável por multas.</textarea></div>
-            </div>
-            <div style="display:flex;gap:10px;margin-top:14px">
-              <button class="btn btn-primary" onclick="registrarContrato()">📄 Registrar</button>
-              <button class="btn btn-ghost" onclick="window.print()">🖨 Imprimir</button>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header"><span class="card-title">Pré-visualização</span></div>
-            <div class="contract-preview">
-              <h2>CONTRATO DE LOCAÇÃO DE VEÍCULO</h2>
-              <p class="cp-sub">FleetPro Locadora · CNPJ: 00.000.000/0001-00</p>
-              <p>A <strong>FleetPro Locadora</strong> e <strong><span id="ct-cli">___</span></strong> celebram o presente contrato.</p>
-              <p><strong>Veículo:</strong> <span id="ct-vei">___</span></p>
-              <p><strong>Período:</strong> <span id="ct-ini">__/__/____</span> a <span id="ct-fim">__/__/____</span> — <span id="ct-dias">__</span> diárias.</p>
-              <p><strong>Total:</strong> R$ <span id="ct-total">0,00</span></p>
-              <p><strong>Km inicial:</strong> <span id="ct-km">__</span></p>
-              <p><strong>Obs:</strong> <span id="ct-obs">—</span></p>
-              <p>O LOCATÁRIO declara receber o veículo em perfeito estado.</p>
-              <div class="sign-row">
-                <div class="sign-block"><div class="sign-line"></div>FleetPro Locadora</div>
-                <div class="sign-block"><div class="sign-line"></div><span id="ct-cli2">Locatário</span></div>
+          <!-- FORMULÁRIO -->
+          <div class="card" style="overflow-y:auto;max-height:calc(100vh - 200px)">
+            <div class="card-header"><span class="card-title">Dados do contrato</span></div>
+            <div class="form-grid" style="padding:4px 0">
+
+              <!-- CLIENTE E VEÍCULO -->
+              <div class="form-group"><label>Cliente</label><select id="c-cli" style="width:100%" onchange="previewContrato()"></select></div>
+              <div class="form-group"><label>Veículo</label><select id="c-vei" style="width:100%" onchange="autoFillContrato()"></select></div>
+
+              <!-- CONDUTOR -->
+              <div class="form-group"><label>Condutor (nome)</label><input type="text" id="c-condutor" placeholder="Igual ao cliente se vazio" style="width:100%" oninput="previewContrato()"></div>
+              <div class="form-group"><label>CPF do condutor</label><input type="text" id="c-condutor-cpf" placeholder="Igual ao cliente se vazio" style="width:100%" oninput="previewContrato()"></div>
+
+              <!-- DATAS -->
+              <div class="form-group"><label>Data retirada</label><input type="date" id="c-ini" style="width:100%" oninput="previewContrato()"></div>
+              <div class="form-group"><label>Data devolução</label><input type="date" id="c-fim" style="width:100%" oninput="previewContrato()"></div>
+
+              <!-- VALOR PRINCIPAL -->
+              <div class="form-group"><label id="label-valor-principal">Valor semanal (R$)</label><input type="number" id="c-dia" placeholder="0,00" step="0.01" style="width:100%" oninput="previewContrato()"></div>
+              <div class="form-group"><label id="label-periodo">Período (semanas)</label><input type="number" id="c-periodo" value="1" min="1" style="width:100%" oninput="previewContrato()"></div>
+
+              <!-- KM e CAUÇÃO -->
+              <div class="form-group"><label>Km saída</label><input type="text" id="c-km" placeholder="0 km" style="width:100%" oninput="previewContrato()"></div>
+              <div class="form-group"><label>Caução / Garantia (R$)</label><input type="number" id="c-caucao" placeholder="600,00" step="0.01" style="width:100%" oninput="previewContrato()"></div>
+
+              <!-- PAGAMENTO -->
+              <div class="form-group"><label>Forma de pagamento</label>
+                <select id="c-pgto" style="width:100%" onchange="previewContrato()">
+                  <option value="PIX">PIX</option>
+                  <option value="Cartão de Crédito">Cartão de Crédito</option>
+                  <option value="Cartão de Débito">Cartão de Débito</option>
+                  <option value="Boleto">Boleto</option>
+                  <option value="Dinheiro">Dinheiro</option>
+                </select>
               </div>
-              <p style="text-align:center;margin-top:12px;font-size:10px;color:#999"><span id="ct-data"></span></p>
-              <div id="ct-aviso-reserva" style="display:none;margin-top:12px;padding:8px 12px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;font-size:11px;color:#92400e;"></div>
+              <div class="form-group" style="display:flex;align-items:flex-end">
+                <div style="width:100%"></div>
+              </div>
+
+              <!-- CAMPOS ESPECÍFICOS MOTO -->
+              <div id="campos-moto" class="form-group full" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div class="form-group"><label>Franquia Km</label><input type="number" id="c-franquia-km" value="0" style="width:100%" oninput="previewContrato()"></div>
+                <div class="form-group"><label>Valor Km Excedente (R$)</label><input type="number" id="c-km-excedente" value="0" step="0.01" style="width:100%" oninput="previewContrato()"></div>
+              </div>
+
+              <!-- CAMPOS ESPECÍFICOS CARRO -->
+              <div id="campos-carro" class="form-group full" style="display:none;grid-template-columns:1fr 1fr;gap:14px">
+                <div class="form-group"><label>Grupo do veículo</label><input type="text" id="c-grupo" placeholder="Ex: Grupo J – SUV Automático" style="width:100%" oninput="previewContrato()"></div>
+                <div class="form-group"><label>Tanque saída</label>
+                  <select id="c-tanque" style="width:100%" onchange="previewContrato()">
+                    <option value="Cheio">Cheio</option><option value="3/4">3/4</option>
+                    <option value="1/2">1/2</option><option value="1/4">1/4</option>
+                  </select>
+                </div>
+                <div class="form-group"><label>Proteção</label>
+                  <select id="c-protecao" style="width:100%" onchange="previewContrato()">
+                    <option value="Basica">Básica (franquia 12%)</option>
+                    <option value="Completa">Completa (franquia 6%)</option>
+                  </select>
+                </div>
+                <div class="form-group"><label>Taxa de locação (%)</label><input type="number" id="c-taxa-loc" value="6" step="0.1" style="width:100%" oninput="previewContrato()"></div>
+                <div class="form-group"><label>Lavagem antecipada (R$)</label><input type="number" id="c-lavagem" value="0" step="0.01" style="width:100%" oninput="previewContrato()"></div>
+                <div class="form-group" style="display:flex;align-items:center;gap:8px;padding-top:20px">
+                  <input type="checkbox" id="c-km-livre" onchange="previewContrato()" checked>
+                  <label style="margin:0;cursor:pointer" for="c-km-livre">Km livre</label>
+                </div>
+              </div>
+
+              <!-- OBSERVAÇÕES -->
+              <div class="form-group full"><label>Observações</label>
+                <textarea id="c-obs" rows="3" style="width:100%;resize:vertical" oninput="previewContrato()">Veículo em perfeito estado. Cliente responsável por multas.</textarea>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+              <button class="btn btn-primary btn-registrar" onclick="registrarContrato()" style="flex:1;min-width:160px">📄 Registrar contrato</button>
+              <button class="btn btn-ghost" onclick="gerarPdfContrato(_peekNumContrato(), previewContrato())" style="padding:8px 14px">⬇️ Baixar PDF</button>
+            </div>
+            <div id="ct-aviso-reserva" style="display:none;margin-top:10px;padding:8px 12px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;font-size:11px;color:#92400e;"></div>
+          </div>
+
+          <!-- PRÉ-VISUALIZAÇÃO -->
+          <div class="card" style="overflow-y:auto;max-height:calc(100vh - 200px)">
+            <div class="card-header">
+              <span class="card-title">Pré-visualização</span>
+              <span id="ct-tipo-badge" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#EFF6FF;color:#1d4ed8">MOTO</span>
+            </div>
+            <div class="contract-preview" style="font-size:11px">
+
+              <!-- HEADER -->
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #006400;padding-bottom:10px;margin-bottom:10px">
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:#006400;letter-spacing:1px">ROYAL RENT A CAR LTDA</div>
+                  <div style="font-size:9px;color:#666">CNPJ: 18.686.521/0002-90</div>
+                  <div style="font-size:9px;color:#666">Tel: (21) 96894-9627 | sac@locadoraroyal.com.br</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:13px;font-weight:800;color:#006400">CONTRATO #<span id="ct-num">1</span></div>
+                  <div style="font-size:9px;color:#666">Situação: Em Vigência</div>
+                  <div style="font-size:9px;color:#666"><span id="ct-data"></span></div>
+                </div>
+              </div>
+
+              <!-- GRID 3 COLUNAS -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+                <div style="border:1px solid #ddd;border-radius:6px;overflow:hidden">
+                  <div style="background:#006400;color:#fff;font-size:9px;font-weight:700;padding:3px 6px">CLIENTE</div>
+                  <div style="padding:6px;font-size:10px">
+                    <div style="font-weight:700" id="ct-cli">___</div>
+                    <div style="color:#555">CPF: <span id="ct-cpf">___</span></div>
+                    <div style="color:#555">Tel: <span id="ct-tel">___</span></div>
+                    <div style="margin-top:4px;color:#444;font-size:9px;font-weight:600">CONDUTOR</div>
+                    <div id="ct-condutor" style="font-size:9.5px">___</div>
+                    <div style="color:#555;font-size:9px">CPF: <span id="ct-condutor-cpf">___</span></div>
+                  </div>
+                </div>
+                <div style="border:1px solid #ddd;border-radius:6px;overflow:hidden">
+                  <div style="background:#006400;color:#fff;font-size:9px;font-weight:700;padding:3px 6px">RETIRADA</div>
+                  <div style="padding:6px;font-size:10px">
+                    <div style="font-weight:700">Placa: <span id="ct-placa">___</span></div>
+                    <div style="color:#555">Local: Loja</div>
+                    <div style="color:#555">Data: <span id="ct-ini">—</span></div>
+                    <div style="color:#555;font-size:9px;margin-top:2px">Royal Rent A Car Ltda</div>
+                    <div style="color:#555;font-size:9px">Av. das Américas, 12900</div>
+                    <div style="color:#555;font-size:9px">Recreio dos Bandeirantes</div>
+                  </div>
+                </div>
+                <div style="border:1px solid #ddd;border-radius:6px;overflow:hidden">
+                  <div style="background:#006400;color:#fff;font-size:9px;font-weight:700;padding:3px 6px">DEVOLUÇÃO</div>
+                  <div style="padding:6px;font-size:10px">
+                    <div style="font-weight:700">Placa: <span id="ct-placa2" style="display:none"></span><span id="ct-placa">___</span></div>
+                    <div style="color:#555">Local: Loja</div>
+                    <div style="color:#555">Data: <span id="ct-fim">—</span></div>
+                    <div style="color:#555;font-size:9px;margin-top:2px">Royal Rent A Car Ltda</div>
+                    <div style="color:#555;font-size:9px">Av. das Américas, 12900</div>
+                    <div style="color:#555;font-size:9px">Recreio dos Bandeirantes</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TABELA VALORES -->
+              <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-size:10px">
+                <thead>
+                  <tr style="background:#006400;color:#fff">
+                    <th style="padding:4px 6px;text-align:left">Veículo</th>
+                    <th style="padding:4px 6px;text-align:center">Período</th>
+                    <th style="padding:4px 6px;text-align:right">Valor Unit.</th>
+                    <th style="padding:4px 6px;text-align:right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="background:#f0f8f0">
+                    <td style="padding:4px 6px;font-weight:600" id="ct-modelo">___</td>
+                    <td style="padding:4px 6px;text-align:center" id="ct-periodo">—</td>
+                    <td style="padding:4px 6px;text-align:right" id="ct-dia-val">R$ 0,00</td>
+                    <td style="padding:4px 6px;text-align:right;font-weight:700;color:#006400" id="ct-total">R$ 0,00</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- PAGAMENTO -->
+              <div style="display:flex;gap:8px;font-size:10px;margin-bottom:8px;flex-wrap:wrap">
+                <div style="flex:1;border:1px solid #ddd;border-radius:4px;padding:5px 8px">
+                  <span style="color:#555">Pagamento:</span> <strong id="ct-pgto">PIX</strong>
+                </div>
+                <div style="flex:1;border:1px solid #ddd;border-radius:4px;padding:5px 8px">
+                  <span style="color:#555">Caução:</span> <strong id="ct-caucao">R$ 0,00</strong>
+                </div>
+              </div>
+
+              <!-- TOTAL DESTAQUE -->
+              <div style="background:#e8f5e9;border:1.5px solid #006400;border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-weight:700;font-size:11px;color:#006400">VALOR TOTAL DO CONTRATO</span>
+                <span style="font-size:15px;font-weight:800;color:#006400" id="ct-total-bruto">R$ 0,00</span>
+              </div>
+
+              <!-- OBSERVAÇÕES -->
+              <div style="font-size:10px;color:#555;border:1px solid #eee;border-radius:4px;padding:5px 8px;margin-bottom:10px">
+                <span style="font-weight:600">Obs:</span> <span id="ct-obs">—</span>
+              </div>
+
+              <!-- ASSINATURAS -->
+              <div style="display:flex;justify-content:space-between;margin-top:20px;gap:10px">
+                <div style="text-align:center;flex:1">
+                  <div style="border-top:1px solid #000;padding-top:4px;font-size:10px">
+                    <div style="font-weight:600" id="ct-cli2">Cliente</div>
+                    <div style="color:#666;font-size:9px" id="ct-cpf2"></div>
+                  </div>
+                </div>
+                <div style="text-align:center;flex:1">
+                  <div style="border-top:1px solid #000;padding-top:4px;font-size:10px">
+                    <div style="font-weight:600">Motorista</div>
+                  </div>
+                </div>
+                <div style="text-align:center;flex:1">
+                  <div style="border-top:1px solid #000;padding-top:4px;font-size:10px">
+                    <div style="font-weight:600" id="ct-atendente">Atendente</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
