@@ -145,7 +145,9 @@ function previewContrato(){
     }
   }
 
-  return {totalBruto, totalLiq, valorPago, nomeCli, cpfCli, telCli, placa, modelo, atendente, diasLabel, dia, km, obs, condutor, condutorCpf, pgto, caucao, numCtrato, periodoVal};
+  const ini = document.getElementById('c-ini')?.value||'';
+  const fim = document.getElementById('c-fim')?.value||'';
+  return {totalBruto, totalLiq, valorPago, nomeCli, cpfCli, telCli, placa, modelo, atendente, diasLabel, dia, km, obs, condutor, condutorCpf, pgto, caucao, numCtrato, periodoVal, ini, fim};
 }
 
 function _set(id, val){
@@ -160,7 +162,6 @@ async function registrarContrato(){
   const vid = document.getElementById('c-vei')?.value;
   const ini = document.getElementById('c-ini')?.value;
   const fim = document.getElementById('c-fim')?.value;
-  const dia = parseFloat(document.getElementById('c-dia')?.value)||0;
   const km  = parseInt(document.getElementById('c-km')?.value)||0;
   const obs = document.getElementById('c-obs')?.value||'';
 
@@ -230,7 +231,18 @@ function _msgWppContrato(num, c, v, d){
 }
 
 // ══ GERAR PDF ══
+function _baixarPdfSemRegistrar(){
+  const d = previewContrato();
+  gerarPdfContrato(_peekNumContrato(), d);
+}
+
 async function gerarPdfContrato(numContrato, d){
+  // Se d não foi passado, chama previewContrato para obter os dados
+  if(!d || typeof d !== 'object') d = previewContrato();
+  if(!d) return;
+  // Extrai dia e periodoVal do objeto d para uso no PDF
+  const dia        = d.dia || 0;
+  const periodoVal = d.periodoVal || 1;
   // Carrega jsPDF dinamicamente
   if(!window.jspdf){
     await new Promise((res,rej)=>{
@@ -361,7 +373,7 @@ async function gerarPdfContrato(numContrato, d){
     const rowMoto = [
       `${d.placa} - ${d.modelo}`,
       document.getElementById('c-franquia-km')?.value||'0',
-      `R$ ${dia.toFixed(2).replace('.',',')}`,
+      `R$ ${(d.dia||0).toFixed(2).replace('.',',')}`,
       `R$ ${(parseFloat(document.getElementById('c-km-excedente')?.value)||0).toFixed(2).replace('.',',')}`,
       document.getElementById('c-ini')?.value ? fmtData(document.getElementById('c-ini').value) : '—',
       d.km,
@@ -388,7 +400,7 @@ async function gerarPdfContrato(numContrato, d){
     const dias2 = document.getElementById('c-ini')?.value&&document.getElementById('c-fim')?.value
       ? Math.max(1,Math.ceil((new Date(document.getElementById('c-fim').value)-new Date(document.getElementById('c-ini').value))/86400000))
       : periodoVal2;
-    const totalDiarias = dia * dias2;
+    const totalDiarias = (d.dia||0) * dias2;
     const totalTaxa    = totalDiarias * taxaLoc/100;
 
     txt(`Grupo: ${grupo}    Km Livre: ${kmLivre?'Sim':'Não'}    Tanque Saída: ${tanque}    Km Saída: ${d.km} km`, M, y+4, {size:7.5});
@@ -402,7 +414,7 @@ async function gerarPdfContrato(numContrato, d){
     y+=6;
 
     const rowsCarro=[
-      ['Diária:', dias2, `R$ ${dia.toFixed(2).replace('.',',')}`, '—', `R$ ${totalDiarias.toFixed(2).replace('.',',')}`],
+      ['Diária:', dias2, `R$ ${(d.dia||0).toFixed(2).replace('.',',')}`, '—', `R$ ${totalDiarias.toFixed(2).replace('.',',')}`],
       ['Taxa de Locação:', 1, `${taxaLoc}%`, '—', `R$ ${totalTaxa.toFixed(2).replace('.',',')}`],
       lavagem>0 ? ['Lavagem Antecipada:', 1, `R$ ${lavagem.toFixed(2).replace('.',',')}`, '—', `R$ ${lavagem.toFixed(2).replace('.',',')}`] : null,
     ].filter(Boolean);
