@@ -968,11 +968,13 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
       <div class="form-group"><label>Status</label>
         <select id="ev-status" style="width:100%">
           <option value="disponivel">✅ Disponível</option>
+          <option value="preparacao">⚙️ Em preparação</option>
           <option value="reservado">🗓️ Reservado</option>
           <option value="alugado">🔴 Alugado</option>
           <option value="manutencao">🔧 Manutenção</option>
         </select>
       </div>
+      <div class="form-group"><label>📅 Data de entrada</label><input type="date" id="ev-data-entrada" style="width:100%"></div>
       <div class="form-group full"><label>📈 Investidor (proprietário)</label><select id="ev-investidor" style="width:100%"><option value="">— Nenhum (frota própria)</option></select></div>
       <div class="form-group full"><label>Observações</label><textarea id="ev-obs" rows="2" style="width:100%;resize:none"></textarea></div>
     </div>
