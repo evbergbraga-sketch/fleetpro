@@ -307,11 +307,11 @@ function renderInvestidores(){
   const hoje          = new Date();
   const qtdMotos      = veiculosFinal.filter(v=>v.tipo==='moto').length;
   // Veículos "em preparação": ainda dentro do buffer de 30 dias
-  const emPrepLista   = veiculosFinal.filter(v=>v.status==='preparacao'&&v.data_entrada&&
-    Math.ceil((hoje-new Date(v.data_entrada))/86400000)<30);
+  const emPrepLista   = veiculosFinal.filter(v=>v.status==='preparacao'&&
+    Math.ceil((hoje-new Date(v.data_entrada||v.created_at))/86400000)<30);
   // Veículos ativos no rendimento: todos exceto os ainda em preparação
   const qtdAtivos     = veiculosFinal.filter(v=>v.tipo==='moto'&&
-    !(v.status==='preparacao'&&v.data_entrada&&Math.ceil((hoje-new Date(v.data_entrada))/86400000)<30)).length;
+    !(v.status==='preparacao'&&Math.ceil((hoje-new Date(v.data_entrada||v.created_at))/86400000)<30)).length;
   const investimento  = qtdMotos * VALOR_MOTO;
   window._invInvestimento = investimento;
   window._invEmPrep   = emPrepLista;
@@ -451,15 +451,22 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
     </div>
     <div class="inv-proj-grid">
       ${[1,3,6,12].map(m=>{
-        // Calcula quantos veículos em prep estarão ativos nesse período
-        const prepAtivosNoMes = (window._invEmPrep||[]).filter(v=>{
-          if(!v.data_entrada) return false;
-          const diasDeEntrada = Math.ceil((new Date()-new Date(v.data_entrada))/86400000);
-          const diasRestantes = 30 - diasDeEntrada;
-          return (m*30) >= diasRestantes; // vai estar ativo dentro desse período
-        }).length;
-        const rendProj = rendMensal*m + prepAtivosNoMes*RENDIMENTO_MES*m;
-        const extra = prepAtivosNoMes>0?`<div style="font-size:9px;color:${INV_THEME.green};margin-top:2px">+${prepAtivosNoMes} moto${prepAtivosNoMes!==1?'s':''} em prep.</div>`:'';
+        // Regra: moto em prep leva 1 mês inteiro para ficar pronta
+        // Só entra no rendimento a partir do 2º mês em diante
+        let rendPrep = 0;
+        let prepCount = 0;
+        (window._invEmPrep||[]).forEach(v=>{
+          // Meses que vai render = período total - 1 mês de preparação
+          const mesesAtivos = Math.max(0, m - 1);
+          if(mesesAtivos > 0){
+            rendPrep += RENDIMENTO_MES * mesesAtivos;
+            prepCount++;
+          }
+        });
+        const rendProj = rendMensal*m + rendPrep;
+        const extra = prepCount>0
+          ? `<div style="font-size:9px;color:${INV_THEME.green};margin-top:2px">${m===1?'⏳ aguardando prep.':'+'+prepCount+' moto'+(prepCount!==1?'s':'')+' (+30d)'}</div>`
+          : '';
         return `
         <div class="inv-proj-item">
           <div class="inv-proj-mes">${m} ${m===1?'mês':'meses'}</div>
@@ -524,11 +531,11 @@ async function _carregarPagamentos(invId){
 // ══ EM PREPARAÇÃO ══
 function _renderEmPreparacao(veiculosFinal){
   const hoje = new Date();
-  const emPrep = veiculosFinal.filter(v=>v.status==='preparacao'&&v.data_entrada);
+  const emPrep = veiculosFinal.filter(v=>v.status==='preparacao');
   if(!emPrep.length) return '';
 
   const rows = emPrep.map(v=>{
-    const entrada   = new Date(v.data_entrada);
+    const entrada   = new Date(v.data_entrada||v.created_at);
     const diasPassados = Math.ceil((hoje - entrada)/86400000);
     const diasRestantes = Math.max(0, 30 - diasPassados);
     const pct = Math.min(100, Math.round((diasPassados/30)*100));
