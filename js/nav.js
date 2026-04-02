@@ -8,6 +8,7 @@ const PAGE_CFG = {
   historico:   {title:'Histórico & Manutenção',  action:'+ Manutenção',        modal:'manutencao',roles:['admin','atendente']},
   clientes:    {title:'Clientes',                action:'+ Novo cliente',      modal:'cliente',   roles:['admin','atendente']},
   reservas:    {title:'Reservas',                action:'+ Nova reserva',      modal:'reserva',   roles:['admin','atendente']},
+  locacoes:    {title:'Locações em andamento',   action:'',                    modal:null,        roles:['admin','atendente']},
   contratos:   {title:'Contratos',               action:'',                    modal:null,        roles:['admin','atendente']},
   calendario:  {title:'Calendário',              action:'',                    modal:null,        roles:['admin','atendente']},
   chat:        {title:'Chat WhatsApp',           action:'',                    modal:null,        roles:['admin','atendente']},
@@ -58,6 +59,7 @@ function goPage(id, navEl){
   if(id==='historico'){renderHistVeiculosList();}
   if(id==='carros'||id==='motos'){preencherSelectInvestidores();}
   if(id==='reservas'){renderReservas();}
+  if(id==='locacoes'){renderLocacoes();}
 }
 
 // ══ DATA LOADING ══
@@ -69,6 +71,7 @@ async function carregarTudo(){
     loadManutencoes(),
     loadPerfis(),
     loadReservas(),
+    loadLocacoesCompletas(),
   ]);
   expirarReservas();
   renderDashboard();
