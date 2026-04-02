@@ -145,8 +145,6 @@ function previewContrato(){
     }
   }
 
-  const ini = document.getElementById('c-ini')?.value||'';
-  const fim = document.getElementById('c-fim')?.value||'';
   return {totalBruto, totalLiq, valorPago, nomeCli, cpfCli, telCli, placa, modelo, atendente, diasLabel, dia, km, obs, condutor, condutorCpf, pgto, caucao, numCtrato, periodoVal, ini, fim};
 }
 
