@@ -278,68 +278,112 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
       <!-- CONTRATOS -->
       <div class="page" id="page-contratos">
 
-        <!-- SELEÇÃO DE TIPO -->
+        <!-- TIPO + NÚMERO -->
         <style>
-          .btn-tipo-contrato {
-            display:flex;align-items:center;gap:8px;padding:14px 24px;
-            border-radius:10px;border:2px solid var(--border2);
-            background:var(--card);color:var(--muted);
-            font-weight:700;cursor:pointer;font-size:14px;
-            transition:all .15s;flex:1;justify-content:center;
-          }
-          .btn-tipo-contrato.active {
-            border-color:var(--accent)!important;
-            background:var(--accent)!important;
-            color:#fff!important;
-            box-shadow:0 2px 12px rgba(37,99,235,.25);
-          }
-          .btn-tipo-contrato:not(.active):hover {
-            border-color:var(--accent);color:var(--accent);
-            background:rgba(37,99,235,.04);
-          }
+          .tipo-contrato-wrap{display:flex;align-items:center;gap:0;background:var(--bg2);border:1.5px solid var(--border2);border-radius:10px;padding:4px;width:fit-content}
+          .btn-tipo-contrato{display:flex;align-items:center;gap:8px;padding:9px 22px;border-radius:7px;border:none;background:transparent;color:var(--muted);font-weight:600;cursor:pointer;font-size:14px;transition:all .18s;font-family:var(--font-body)}
+          .btn-tipo-contrato.active{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.25)}
+          .btn-tipo-contrato:not(.active):hover{background:var(--bg3);color:var(--text)}
+          .contrato-num-chip{font-size:12px;font-weight:700;color:var(--accent);background:rgba(37,99,235,.08);padding:7px 14px;border-radius:8px;border:1.5px solid rgba(37,99,235,.2);letter-spacing:.5px}
+          .form-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted2);margin:14px 0 8px;border-bottom:1px solid var(--border2);padding-bottom:4px}
         </style>
-        <div style="background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:16px 20px;margin-bottom:16px">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Selecione o tipo de contrato</div>
-          <div style="display:flex;gap:12px;flex-wrap:wrap">
-            <button class="btn-tipo-contrato active" data-tipo="moto" onclick="selecionarTipoContrato('moto')">
-              🏍️ Contrato de Moto
-            </button>
-            <button class="btn-tipo-contrato" data-tipo="carro" onclick="selecionarTipoContrato('carro')">
-              🚗 Contrato de Carro
-            </button>
-            <span id="c-num-display" style="display:flex;align-items:center;margin-left:auto;font-size:13px;font-weight:700;color:var(--accent);background:rgba(37,99,235,.06);padding:8px 16px;border-radius:8px;border:1px solid rgba(37,99,235,.2)">📋 Contrato #1</span>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+          <div class="tipo-contrato-wrap">
+            <button class="btn-tipo-contrato active" data-tipo="moto" onclick="selecionarTipoContrato('moto')">🏍️ Moto</button>
+            <button class="btn-tipo-contrato" data-tipo="carro" onclick="selecionarTipoContrato('carro')">🚗 Carro</button>
           </div>
+          <span id="c-num-display" class="contrato-num-chip">Contrato #1</span>
         </div>
 
         <div class="grid2">
-          <!-- FORMULÁRIO -->
+          <!-- ══ FORMULÁRIO ══ -->
           <div class="card" style="overflow-y:auto;max-height:calc(100vh - 200px)">
             <div class="card-header"><span class="card-title">Dados do contrato</span></div>
-            <div class="form-grid" style="padding:4px 0">
 
-              <!-- CLIENTE E VEÍCULO -->
-              <div class="form-group"><label>Cliente</label><select id="c-cli" style="width:100%" onchange="previewContrato()"></select></div>
-              <div class="form-group"><label>Veículo</label><select id="c-vei" style="width:100%" onchange="autoFillContrato()"></select></div>
+            <!-- CLIENTE E VEÍCULO -->
+            <div class="form-section-title">👤 Cliente e veículo</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Cliente</label>
+                <select id="c-cli" style="width:100%" onchange="_carregarCondutoresCliente();previewContrato()"></select>
+              </div>
+              <div class="form-group">
+                <label>Veículo</label>
+                <select id="c-vei" style="width:100%" onchange="autoFillContrato()"></select>
+              </div>
+            </div>
 
-              <!-- CONDUTOR -->
-              <div class="form-group"><label>Condutor (nome)</label><input type="text" id="c-condutor" placeholder="Igual ao cliente se vazio" style="width:100%" oninput="previewContrato()"></div>
-              <div class="form-group"><label>CPF do condutor</label><input type="text" id="c-condutor-cpf" placeholder="Igual ao cliente se vazio" style="width:100%" oninput="previewContrato()"></div>
+            <!-- CONDUTOR PRINCIPAL -->
+            <div class="form-section-title">🧑‍💼 Condutores</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Condutor principal (nome)</label>
+                <input type="text" id="c-condutor" placeholder="Igual ao cliente se vazio" style="width:100%" oninput="previewContrato()">
+              </div>
+              <div class="form-group">
+                <label>CPF do condutor principal</label>
+                <input type="text" id="c-condutor-cpf" placeholder="Igual ao cliente se vazio" style="width:100%" oninput="previewContrato()">
+              </div>
+            </div>
 
-              <!-- DATAS -->
-              <div class="form-group"><label>Data retirada</label><input type="date" id="c-ini" style="width:100%" oninput="previewContrato()"></div>
-              <div class="form-group"><label>Data devolução</label><input type="date" id="c-fim" style="width:100%" oninput="previewContrato()"></div>
+            <!-- CONDUTORES ADICIONAIS -->
+            <div id="condutores-lista" style="margin-bottom:8px"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:12px;align-items:end">
+              <div class="form-group" style="margin:0">
+                <label>+ Condutor adicional</label>
+                <input type="text" id="novo-condutor-nome" placeholder="Nome completo" style="width:100%">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label>CPF</label>
+                <input type="text" id="novo-condutor-cpf" placeholder="000.000.000-00" style="width:100%">
+              </div>
+              <button class="btn btn-ghost" style="padding:9px 12px;font-size:12px;white-space:nowrap" onclick="_adicionarCondutor()">+ Adicionar</button>
+            </div>
 
-              <!-- VALOR PRINCIPAL -->
-              <div class="form-group"><label id="label-valor-principal">Valor semanal (R$)</label><input type="number" id="c-dia" placeholder="0,00" step="0.01" style="width:100%" oninput="previewContrato()"></div>
-              <div class="form-group"><label id="label-periodo">Período (semanas)</label><input type="number" id="c-periodo" value="1" min="1" style="width:100%" oninput="previewContrato()"></div>
+            <!-- DATAS E LOCAL -->
+            <div class="form-section-title">📅 Período e local</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Data/hora de retirada</label>
+                <input type="datetime-local" id="c-ini" style="width:100%" oninput="previewContrato()">
+              </div>
+              <div class="form-group">
+                <label>Data/hora de devolução</label>
+                <input type="datetime-local" id="c-fim" style="width:100%" oninput="previewContrato()">
+              </div>
+              <div class="form-group">
+                <label>Local de retirada</label>
+                <select id="c-local-ret" style="width:100%" onchange="previewContrato()">
+                  <option value="Loja">Loja</option>
+                  <option value="Endereço do cliente">Endereço do cliente</option>
+                  <option value="Outro">Outro</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Km saída</label>
+                <input type="text" id="c-km" placeholder="0 km" style="width:100%" oninput="previewContrato()">
+              </div>
+            </div>
 
-              <!-- KM e CAUÇÃO -->
-              <div class="form-group"><label>Km saída</label><input type="text" id="c-km" placeholder="0 km" style="width:100%" oninput="previewContrato()"></div>
-              <div class="form-group"><label>Caução / Garantia (R$)</label><input type="number" id="c-caucao" placeholder="600,00" step="0.01" style="width:100%" oninput="previewContrato()"></div>
-
-              <!-- PAGAMENTO -->
-              <div class="form-group"><label>Forma de pagamento</label>
-                <select id="c-pgto" style="width:100%" onchange="previewContrato()">
+            <!-- VALOR -->
+            <div class="form-section-title">💰 Valores</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label id="label-valor-principal">Valor semanal (R$)</label>
+                <input type="number" id="c-dia" placeholder="0,00" step="0.01" style="width:100%" oninput="previewContrato()">
+              </div>
+              <div class="form-group">
+                <label id="label-periodo">Período (semanas)</label>
+                <input type="number" id="c-periodo" value="1" min="1" style="width:100%" oninput="previewContrato()">
+              </div>
+              <div class="form-group">
+                <label>Caução / Garantia (R$)</label>
+                <input type="number" id="c-caucao" placeholder="600,00" step="0.01" style="width:100%" oninput="previewContrato()">
+              </div>
+              <div class="form-group">
+                <label>Forma de pagamento</label>
+                <select id="c-pgto" style="width:100%" onchange="_toggleCamposCartao();previewContrato()">
                   <option value="PIX">PIX</option>
                   <option value="Cartão de Crédito">Cartão de Crédito</option>
                   <option value="Cartão de Débito">Cartão de Débito</option>
@@ -347,45 +391,115 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
                   <option value="Dinheiro">Dinheiro</option>
                 </select>
               </div>
-              <div class="form-group" style="display:flex;align-items:flex-end">
-                <div style="width:100%"></div>
-              </div>
+            </div>
 
-              <!-- CAMPOS ESPECÍFICOS MOTO -->
-              <div id="campos-moto" class="form-group full" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                <div class="form-group"><label>Franquia Km</label><input type="number" id="c-franquia-km" value="0" style="width:100%" oninput="previewContrato()"></div>
-                <div class="form-group"><label>Valor Km Excedente (R$)</label><input type="number" id="c-km-excedente" value="0" step="0.01" style="width:100%" oninput="previewContrato()"></div>
-              </div>
-
-              <!-- CAMPOS ESPECÍFICOS CARRO -->
-              <div id="campos-carro" class="form-group full" style="display:none;grid-template-columns:1fr 1fr;gap:14px">
-                <div class="form-group"><label>Grupo do veículo</label><input type="text" id="c-grupo" placeholder="Ex: Grupo J – SUV Automático" style="width:100%" oninput="previewContrato()"></div>
-                <div class="form-group"><label>Tanque saída</label>
-                  <select id="c-tanque" style="width:100%" onchange="previewContrato()">
-                    <option value="Cheio">Cheio</option><option value="3/4">3/4</option>
-                    <option value="1/2">1/2</option><option value="1/4">1/4</option>
+            <!-- DADOS DO CARTÃO (condicional) -->
+            <div id="campos-cartao" style="display:none">
+              <div class="form-section-title">💳 Dados do cartão</div>
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label>Titular do cartão</label>
+                  <input type="text" id="c-cartao-titular" placeholder="Nome como no cartão" style="width:100%">
+                </div>
+                <div class="form-group">
+                  <label>Número do cartão</label>
+                  <input type="text" id="c-cartao-numero" placeholder="0000 0000 0000 0000" maxlength="19" style="width:100%"
+                    oninput="this.value=this.value.replace(/\D/g,'').replace(/(\d{4})/g,'$1 ').trim().slice(0,19)">
+                </div>
+                <div class="form-group">
+                  <label>Validade</label>
+                  <input type="text" id="c-cartao-validade" placeholder="MM/AA" maxlength="5" style="width:100%">
+                </div>
+                <div class="form-group">
+                  <label>Bandeira</label>
+                  <select id="c-cartao-bandeira" style="width:100%">
+                    <option value="Visa">Visa</option>
+                    <option value="Mastercard">Mastercard</option>
+                    <option value="Elo">Elo</option>
+                    <option value="American Express">American Express</option>
+                    <option value="Hipercard">Hipercard</option>
+                    <option value="Outra">Outra</option>
                   </select>
                 </div>
-                <div class="form-group"><label>Proteção</label>
+              </div>
+              <div style="font-size:11px;color:var(--muted);background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.15);border-radius:6px;padding:8px 10px;margin-bottom:8px">
+                🔒 Dados do cartão armazenados com segurança para uso exclusivo em cobranças futuras.
+              </div>
+            </div>
+
+            <!-- CAMPOS MOTO -->
+            <div id="campos-moto">
+              <div class="form-section-title">🏍️ Específico — Moto</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Franquia Km</label>
+                  <input type="number" id="c-franquia-km" value="0" style="width:100%" oninput="previewContrato()">
+                </div>
+                <div class="form-group">
+                  <label>Valor Km Excedente (R$)</label>
+                  <input type="number" id="c-km-excedente" value="0" step="0.01" style="width:100%" oninput="previewContrato()">
+                </div>
+              </div>
+            </div>
+
+            <!-- CAMPOS CARRO -->
+            <div id="campos-carro" style="display:none">
+              <div class="form-section-title">🚗 Específico — Carro</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Grupo do veículo</label>
+                  <input type="text" id="c-grupo" placeholder="Ex: Grupo J – SUV Automático" style="width:100%" oninput="previewContrato()">
+                </div>
+                <div class="form-group">
+                  <label>Tanque saída</label>
+                  <select id="c-tanque" style="width:100%" onchange="previewContrato()">
+                    <option>Cheio</option><option>3/4</option><option>1/2</option><option>1/4</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Proteção</label>
                   <select id="c-protecao" style="width:100%" onchange="previewContrato()">
                     <option value="Basica">Básica (franquia 12%)</option>
                     <option value="Completa">Completa (franquia 6%)</option>
                   </select>
                 </div>
-                <div class="form-group"><label>Taxa de locação (%)</label><input type="number" id="c-taxa-loc" value="6" step="0.1" style="width:100%" oninput="previewContrato()"></div>
-                <div class="form-group"><label>Lavagem antecipada (R$)</label><input type="number" id="c-lavagem" value="0" step="0.01" style="width:100%" oninput="previewContrato()"></div>
+                <div class="form-group">
+                  <label>Taxa de locação (%)</label>
+                  <input type="number" id="c-taxa-loc" value="6" step="0.1" style="width:100%" oninput="previewContrato()">
+                </div>
+                <div class="form-group">
+                  <label>Lavagem antecipada (R$)</label>
+                  <input type="number" id="c-lavagem" value="0" step="0.01" style="width:100%" oninput="previewContrato()">
+                </div>
                 <div class="form-group" style="display:flex;align-items:center;gap:8px;padding-top:20px">
                   <input type="checkbox" id="c-km-livre" onchange="previewContrato()" checked>
                   <label style="margin:0;cursor:pointer" for="c-km-livre">Km livre</label>
                 </div>
               </div>
-
-              <!-- OBSERVAÇÕES -->
-              <div class="form-group full"><label>Observações</label>
-                <textarea id="c-obs" rows="3" style="width:100%;resize:vertical" oninput="previewContrato()">Veículo em perfeito estado. Cliente responsável por multas.</textarea>
-              </div>
             </div>
 
+            <!-- SERVIÇOS ADICIONAIS -->
+            <div class="form-section-title">🔧 Serviços / Taxas adicionais</div>
+            <div id="servicos-lista" style="margin-bottom:8px"></div>
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:12px;align-items:end">
+              <div class="form-group" style="margin:0">
+                <label>Descrição</label>
+                <input type="text" id="novo-servico-desc" placeholder="Ex: Lavagem especial, Cadeirinha..." style="width:100%">
+              </div>
+              <div class="form-group" style="margin:0;width:120px">
+                <label>Valor (R$)</label>
+                <input type="number" id="novo-servico-val" placeholder="0,00" step="0.01" style="width:100%">
+              </div>
+              <button class="btn btn-ghost" style="padding:9px 12px;font-size:12px;white-space:nowrap" onclick="_adicionarServico()">+ Adicionar</button>
+            </div>
+
+            <!-- OBSERVAÇÕES -->
+            <div class="form-section-title">📝 Observações</div>
+            <div class="form-group full">
+              <textarea id="c-obs" rows="3" style="width:100%;resize:vertical" oninput="previewContrato()">Veículo em perfeito estado. Cliente responsável por multas.</textarea>
+            </div>
+
+            <!-- BOTÕES -->
             <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
               <button class="btn btn-primary btn-registrar" onclick="registrarContrato()" style="flex:1;min-width:160px">📄 Registrar contrato</button>
               <button class="btn btn-ghost" onclick="_baixarPdfSemRegistrar()" style="padding:8px 14px">⬇️ Baixar PDF</button>
@@ -393,7 +507,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
             <div id="ct-aviso-reserva" style="display:none;margin-top:10px;padding:8px 12px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;font-size:11px;color:#92400e;"></div>
           </div>
 
-          <!-- PRÉ-VISUALIZAÇÃO -->
+          <!-- ══ PRÉ-VISUALIZAÇÃO ══ -->
           <div class="card" style="overflow-y:auto;max-height:calc(100vh - 200px)">
             <div class="card-header">
               <span class="card-title">Pré-visualização</span>
@@ -416,14 +530,14 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
               </div>
 
               <!-- GRID 3 COLUNAS -->
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
                 <div style="border:1px solid #ddd;border-radius:6px;overflow:hidden">
                   <div style="background:#006400;color:#fff;font-size:9px;font-weight:700;padding:3px 6px">CLIENTE</div>
                   <div style="padding:6px;font-size:10px">
                     <div style="font-weight:700" id="ct-cli">___</div>
                     <div style="color:#555">CPF: <span id="ct-cpf">___</span></div>
                     <div style="color:#555">Tel: <span id="ct-tel">___</span></div>
-                    <div style="margin-top:4px;color:#444;font-size:9px;font-weight:600">CONDUTOR</div>
+                    <div style="margin-top:4px;font-size:9px;font-weight:600;color:#444">CONDUTOR(ES)</div>
                     <div id="ct-condutor" style="font-size:9.5px">___</div>
                     <div style="color:#555;font-size:9px">CPF: <span id="ct-condutor-cpf">___</span></div>
                   </div>
@@ -432,22 +546,20 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
                   <div style="background:#006400;color:#fff;font-size:9px;font-weight:700;padding:3px 6px">RETIRADA</div>
                   <div style="padding:6px;font-size:10px">
                     <div style="font-weight:700">Placa: <span id="ct-placa">___</span></div>
-                    <div style="color:#555">Local: Loja</div>
+                    <div style="color:#555">Local: <span id="ct-local-ret">Loja</span></div>
                     <div style="color:#555">Data: <span id="ct-ini">—</span></div>
                     <div style="color:#555;font-size:9px;margin-top:2px">Royal Rent A Car Ltda</div>
                     <div style="color:#555;font-size:9px">Av. das Américas, 12900</div>
-                    <div style="color:#555;font-size:9px">Recreio dos Bandeirantes</div>
                   </div>
                 </div>
                 <div style="border:1px solid #ddd;border-radius:6px;overflow:hidden">
                   <div style="background:#006400;color:#fff;font-size:9px;font-weight:700;padding:3px 6px">DEVOLUÇÃO</div>
                   <div style="padding:6px;font-size:10px">
-                    <div style="font-weight:700">Placa: <span id="ct-placa2" style="display:none"></span><span id="ct-placa">___</span></div>
+                    <div style="font-weight:700">Placa: <span id="ct-placa2">___</span></div>
                     <div style="color:#555">Local: Loja</div>
                     <div style="color:#555">Data: <span id="ct-fim">—</span></div>
                     <div style="color:#555;font-size:9px;margin-top:2px">Royal Rent A Car Ltda</div>
                     <div style="color:#555;font-size:9px">Av. das Américas, 12900</div>
-                    <div style="color:#555;font-size:9px">Recreio dos Bandeirantes</div>
                   </div>
                 </div>
               </div>
@@ -467,10 +579,13 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
                     <td style="padding:4px 6px;font-weight:600" id="ct-modelo">___</td>
                     <td style="padding:4px 6px;text-align:center" id="ct-periodo">—</td>
                     <td style="padding:4px 6px;text-align:right" id="ct-dia-val">R$ 0,00</td>
-                    <td style="padding:4px 6px;text-align:right;font-weight:700;color:#006400" id="ct-total">R$ 0,00</td>
+                    <td style="padding:4px 6px;text-align:right;font-weight:700;color:#006400" id="ct-total-bruto">R$ 0,00</td>
                   </tr>
                 </tbody>
               </table>
+
+              <!-- SERVIÇOS -->
+              <div id="ct-servicos-total" style="font-size:10px;color:#555;text-align:right;margin-bottom:4px"></div>
 
               <!-- PAGAMENTO -->
               <div style="display:flex;gap:8px;font-size:10px;margin-bottom:8px;flex-wrap:wrap">
@@ -482,13 +597,13 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
                 </div>
               </div>
 
-              <!-- TOTAL DESTAQUE -->
+              <!-- TOTAL -->
               <div style="background:#e8f5e9;border:1.5px solid #006400;border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                 <span style="font-weight:700;font-size:11px;color:#006400">VALOR TOTAL DO CONTRATO</span>
-                <span style="font-size:15px;font-weight:800;color:#006400" id="ct-total-bruto">R$ 0,00</span>
+                <span style="font-size:15px;font-weight:800;color:#006400" id="ct-total">R$ 0,00</span>
               </div>
 
-              <!-- OBSERVAÇÕES -->
+              <!-- OBS -->
               <div style="font-size:10px;color:#555;border:1px solid #eee;border-radius:4px;padding:5px 8px;margin-bottom:10px">
                 <span style="font-weight:600">Obs:</span> <span id="ct-obs">—</span>
               </div>
@@ -516,7 +631,6 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
           </div>
         </div>
       </div>
-
       <!-- CALENDÁRIO -->
       <div class="page" id="page-calendario">
         <div class="grid2">
