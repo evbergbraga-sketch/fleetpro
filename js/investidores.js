@@ -303,6 +303,7 @@ function renderInvestidores(){
   }
 
   const ids           = new Set(veiculosFinal.map(v=>v.id));
+  window._invInvestimento = qtdMotos * VALOR_MOTO; // expõe para _renderAcumulado
   const locsFinal     = allLocacoes.filter(l=>ids.has(l.veiculo_id));
   const qtdMotos      = veiculosFinal.filter(v=>v.tipo==='moto').length;
   const investimento  = qtdMotos * VALOR_MOTO;
@@ -420,6 +421,17 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
     </div>
   </div>
 
+  <!-- RENDIMENTO ACUMULADO -->
+  <div class="inv-card" id="inv-card-acumulado">
+    <div class="inv-card-header">
+      <span class="inv-card-title">🏆 Rendimento acumulado</span>
+      <span style="font-size:11px;color:${INV_THEME.gray}" id="inv-acumulado-periodo">carregando...</span>
+    </div>
+    <div id="inv-acumulado-body">
+      <div class="inv-empty">⏳ Carregando pagamentos...</div>
+    </div>
+  </div>
+
   <!-- PROJEÇÃO (2x2 mobile / 4x1 desktop) -->
   <div class="inv-card">
     <div class="inv-card-header">
@@ -482,11 +494,86 @@ async function _carregarPagamentos(invId){
     .order('data_pagamento',{ascending:false}).limit(24);
   _invPagamentos = data||[];
   _renderPagamentosLista();
+  _renderAcumulado(_invPagamentos);
 }
 
 function _renderPagamentosVazio(){
   const el = document.getElementById('inv-pagamentos-lista');
   if(el) el.innerHTML = '<div class="inv-empty">Nenhum pagamento registrado.</div>';
+  _renderAcumulado([]);
+}
+
+function _renderAcumulado(pagamentos){
+  const body    = document.getElementById('inv-acumulado-body');
+  const periodo = document.getElementById('inv-acumulado-periodo');
+  if(!body) return;
+
+  const total = pagamentos.reduce((acc,p)=>acc+(p.valor||0), 0);
+
+  // Meses pagos (únicos por referência ou mês)
+  const mesesPagos = new Set(pagamentos.map(p=>p.referencia||p.data_pagamento?.slice(0,7)||'')).size;
+
+  // Percentual recuperado do investimento
+  const investimento = window._invInvestimento||0;
+  const pctRecuperado = investimento>0 ? ((total/investimento)*100).toFixed(1) : '0.0';
+
+  // Diferença para recuperar 100% do capital
+  const faltam = Math.max(0, (window._invInvestimento||0) - total);
+
+  // Progresso da barra (cap em 100%)
+  const pctBarra = Math.min(100, parseFloat(pctRecuperado));
+
+  // Cor da barra
+  const barColor = pctBarra >= 100 ? '#f0c040' : pctBarra >= 50 ? INV_THEME.green : INV_THEME.greenD;
+
+  if(periodo) periodo.textContent = mesesPagos > 0 ? `${mesesPagos} pagamento${mesesPagos!==1?'s':''}` : 'Sem pagamentos';
+
+  body.innerHTML = `
+    <div style="padding:16px 20px 20px">
+      <!-- Valor principal -->
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:${INV_THEME.gray};margin-bottom:6px">Total recebido</div>
+          <div style="font-size:32px;font-weight:900;color:${INV_THEME.green};line-height:1">
+            R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}
+          </div>
+          <div style="font-size:12px;color:${INV_THEME.gray2};margin-top:4px">
+            de R$ ${(investimento||0).toLocaleString('pt-BR')} investidos
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:28px;font-weight:900;color:${barColor}">${pctRecuperado}%</div>
+          <div style="font-size:11px;color:${INV_THEME.gray2}">recuperado</div>
+        </div>
+      </div>
+
+      <!-- Barra de progresso -->
+      <div style="background:#1a1a1a;border-radius:99px;height:10px;margin-bottom:14px;overflow:hidden">
+        <div style="height:100%;width:${pctBarra}%;background:linear-gradient(90deg,${INV_THEME.greenD},${barColor});border-radius:99px;transition:width .6s ease;position:relative">
+          ${pctBarra>10?`<div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:8px;font-weight:700;color:#000">${pctRecuperado}%</div>`:''}
+        </div>
+      </div>
+
+      <!-- 3 cards abaixo -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div style="background:#0d1f12;border:1px solid ${INV_THEME.border2};border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:${INV_THEME.gray};text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Rendimento<br>médio/mês</div>
+          <div style="font-size:15px;font-weight:800;color:${INV_THEME.green}">
+            R$ ${mesesPagos>0?(total/mesesPagos).toLocaleString('pt-BR',{minimumFractionDigits:2}):'0,00'}
+          </div>
+        </div>
+        <div style="background:#0d1f12;border:1px solid ${INV_THEME.border2};border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:${INV_THEME.gray};text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Pagamentos<br>realizados</div>
+          <div style="font-size:15px;font-weight:800;color:${INV_THEME.green}">${pagamentos.length}</div>
+        </div>
+        <div style="background:${faltam>0?'#1a0d0d':'#0d1a0d'};border:1px solid ${faltam>0?'rgba(231,76,60,.2)':'rgba(46,204,113,.2)'};border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:${INV_THEME.gray};text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${faltam>0?'Falta<br>recuperar':'Capital<br>recuperado'}</div>
+          <div style="font-size:13px;font-weight:800;color:${faltam>0?'#e74c3c':INV_THEME.gold}">
+            ${faltam>0?'R$ '+faltam.toLocaleString('pt-BR',{minimumFractionDigits:2}):'✓ 100%'}
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
 
 function _renderPagamentosLista(){
