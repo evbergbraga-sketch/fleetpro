@@ -309,9 +309,11 @@ function renderInvestidores(){
   // Veículos "em preparação": ainda dentro do buffer de 30 dias
   const emPrepLista   = veiculosFinal.filter(v=>v.status==='preparacao'&&
     Math.ceil((hoje-new Date(v.data_entrada||v.created_at))/86400000)<30);
-  // Veículos ativos no rendimento: todos exceto os ainda em preparação
-  const qtdAtivos     = veiculosFinal.filter(v=>v.tipo==='moto'&&
-    !(v.status==='preparacao'&&Math.ceil((hoje-new Date(v.data_entrada||v.created_at))/86400000)<30)).length;
+  // Veículos ativos no rendimento: TODAS as motos exceto as ainda em preparação (30d)
+  // Status alugado/disponivel/reservado/manutencao = todas rendem
+  const qtdAtivos     = veiculosFinal.filter(v=>v.tipo==='moto'&&v.status!=='preparacao').length
+    + veiculosFinal.filter(v=>v.tipo==='moto'&&v.status==='preparacao'&&
+        Math.ceil((hoje-new Date(v.data_entrada||v.created_at))/86400000)>=30).length;
   const investimento  = qtdMotos * VALOR_MOTO;
   window._invInvestimento = investimento;
   window._invEmPrep   = emPrepLista;
