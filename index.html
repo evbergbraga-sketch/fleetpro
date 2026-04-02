@@ -176,6 +176,14 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
         <div class="stats-grid" style="grid-template-columns:repeat(1,1fr);margin-bottom:8px">
           <div class="stat-card" style="--accent-color:#0891b2;display:flex;align-items:center;padding:14px 20px"><div class="stat-icon" style="position:relative;font-size:18px">📋</div><div style="flex:1"><div class="stat-label">Locações ativas em andamento</div><div class="stat-val" id="st-locacoes" style="color:#0891b2;font-size:24px;margin:2px 0">—</div></div></div>
         </div>
+        <!-- RESERVAS NO DASHBOARD -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <span class="card-title">🗓️ Reservas ativas</span>
+            <button class="btn btn-ghost" style="font-size:11px" onclick="goPage('reservas')">Ver todas →</button>
+          </div>
+          <table><thead><tr><th>Veículo</th><th>Cliente</th><th>Retirada</th><th>Prazo</th></tr></thead><tbody id="dash-reservas"></tbody></table>
+        </div>
         <div class="grid2">
           <div class="card">
             <div class="card-header"><span class="card-title">Locações em andamento</span></div>
@@ -185,14 +193,6 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
             <div class="card-header"><span class="card-title">Manutenções</span></div>
             <table><thead><tr><th>Veículo</th><th>Serviço</th><th>Status</th></tr></thead><tbody id="dash-man"></tbody></table>
           </div>
-        </div>
-        <!-- RESERVAS NO DASHBOARD -->
-        <div class="card" style="margin-top:16px">
-          <div class="card-header">
-            <span class="card-title">🗓️ Reservas ativas</span>
-            <button class="btn btn-ghost" style="font-size:11px" onclick="goPage('reservas')">Ver todas →</button>
-          </div>
-          <table><thead><tr><th>Veículo</th><th>Cliente</th><th>Retirada</th><th>Prazo</th></tr></thead><tbody id="dash-reservas"></tbody></table>
         </div>
       </div>
 
