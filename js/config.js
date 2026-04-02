@@ -1,13 +1,11 @@
 // config.js — Variáveis globais e configuração de perfis
-
 const {createClient} = supabase;
 let sb = null;
 let currentUser = null, currentPerfil = null;
-let allVeiculos=[], allClientes=[], allLocacoes=[], allManutencoes=[], allPerfis=[];
+let allVeiculos=[], allClientes=[], allLocacoes=[], allManutencoes=[], allPerfis=[], allReservas=[];
 let histVeiculoId = null, chatMsgs = {}, activeChatId = null;
 let calYear=new Date().getFullYear(), calMonth=2;
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
 // ══ ROLES CONFIG ══
 const ROLE_MENUS = {
   admin: [
@@ -19,6 +17,7 @@ const ROLE_MENUS = {
     {id:'historico', icon:'📋', label:'Histórico'},
     {section:'Clientes'},
     {id:'clientes',  icon:'👤', label:'Clientes'},
+    {id:'reservas',  icon:'🗓️', label:'Reservas'},
     {id:'contratos', icon:'📄', label:'Contratos'},
     {section:'Operações'},
     {id:'calendario',icon:'📅', label:'Calendário'},
@@ -35,6 +34,7 @@ const ROLE_MENUS = {
     {id:'motos',     icon:'🏍️', label:'Motos'},
     {section:'Clientes'},
     {id:'clientes',  icon:'👤', label:'Clientes'},
+    {id:'reservas',  icon:'🗓️', label:'Reservas'},
     {id:'contratos', icon:'📄', label:'Contratos'},
     {section:'Operações'},
     {id:'calendario',icon:'📅', label:'Calendário'},
@@ -47,7 +47,5 @@ const ROLE_MENUS = {
     {id:'investidores',icon:'📍',label:'Rastreador',     invPage:'inv-rastreador'},
   ],
 };
-
 const ROLE_LABELS = {admin:'Administrador', atendente:'Atendente', investidor:'Investidor'};
-
 // ══ LAYERS ══
