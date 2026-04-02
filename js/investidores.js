@@ -303,10 +303,10 @@ function renderInvestidores(){
   }
 
   const ids           = new Set(veiculosFinal.map(v=>v.id));
-  window._invInvestimento = qtdMotos * VALOR_MOTO; // expõe para _renderAcumulado
   const locsFinal     = allLocacoes.filter(l=>ids.has(l.veiculo_id));
   const qtdMotos      = veiculosFinal.filter(v=>v.tipo==='moto').length;
   const investimento  = qtdMotos * VALOR_MOTO;
+  window._invInvestimento = investimento; // expõe para _renderAcumulado
   const rendMensal    = qtdMotos * RENDIMENTO_MES;
   const rendAnual     = rendMensal * 12;
   const rentabilidade = investimento > 0 ? ((rendMensal/investimento)*100).toFixed(2) : '0.00';
