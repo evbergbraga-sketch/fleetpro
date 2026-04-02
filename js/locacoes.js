@@ -91,14 +91,18 @@ async function abrirModalLocacao(locId){
     .eq('id',locId).single();
   if(!loc){ body.innerHTML='<p style="color:var(--red)">Locação não encontrada.</p>'; return; }
 
-  // Busca checklists existentes
-  const {data:checks} = await sb.from('checklists')
-    .select('*,perfis(nome)')
-    .eq('locacao_id',locId)
-    .order('created_at',{ascending:true});
+  // Busca checklists existentes (tabela pode não existir ainda)
+  let checks = [];
+  try {
+    const {data:checksData, error:chkErr} = await sb.from('checklists')
+      .select('*')
+      .eq('locacao_id',locId)
+      .order('created_at',{ascending:true});
+    if(!chkErr) checks = checksData||[];
+  } catch(e){ checks = []; }
 
-  const checkSaida   = checks?.find(c=>c.tipo==='saida');
-  const checkEntrada = checks?.find(c=>c.tipo==='entrada');
+  const checkSaida   = checks.find(c=>c.tipo==='saida');
+  const checkEntrada = checks.find(c=>c.tipo==='entrada');
 
   const diff = Math.ceil((new Date(loc.data_fim)-new Date())/86400000);
   const statusColor = diff<0?'#dc2626':diff===0?'#d97706':'#16a34a';
