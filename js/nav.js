@@ -2,17 +2,18 @@
 
 // ══ NAVIGATION ══
 const PAGE_CFG = {
-  dashboard:   {title:'Dashboard',              action:'',                    modal:null, roles:['admin','atendente','investidor']},
-  carros:      {title:'Estoque — Carros',        action:'+ Cadastrar Carro',   modal:'veiculo', roles:['admin','atendente']},
-  motos:       {title:'Estoque — Motos',         action:'+ Cadastrar Moto',    modal:'veiculo', roles:['admin','atendente']},
-  historico:   {title:'Histórico & Manutenção',  action:'+ Manutenção',        modal:'manutencao', roles:['admin','atendente']},
-  clientes:    {title:'Clientes',                action:'+ Novo cliente',      modal:'cliente', roles:['admin','atendente']},
-  contratos:   {title:'Contratos',               action:'',                    modal:null, roles:['admin','atendente']},
-  calendario:  {title:'Calendário',              action:'',                    modal:null, roles:['admin','atendente']},
-  chat:        {title:'Chat WhatsApp',           action:'',                    modal:null, roles:['admin','atendente']},
-  usuarios:    {title:'Usuários & Acessos',      action:'',                    modal:null, roles:['admin']},
-  investidores:{title:'Minha Carteira',          action:'',                    modal:null, roles:['admin','investidor']},
-  denied:      {title:'Acesso negado',           action:'',                    modal:null, roles:['admin','atendente','investidor']},
+  dashboard:   {title:'Dashboard',              action:'',                    modal:null,        roles:['admin','atendente','investidor']},
+  carros:      {title:'Estoque — Carros',        action:'+ Cadastrar Carro',   modal:'veiculo',   roles:['admin','atendente']},
+  motos:       {title:'Estoque — Motos',         action:'+ Cadastrar Moto',    modal:'veiculo',   roles:['admin','atendente']},
+  historico:   {title:'Histórico & Manutenção',  action:'+ Manutenção',        modal:'manutencao',roles:['admin','atendente']},
+  clientes:    {title:'Clientes',                action:'+ Novo cliente',      modal:'cliente',   roles:['admin','atendente']},
+  reservas:    {title:'Reservas',                action:'+ Nova reserva',      modal:'reserva',   roles:['admin','atendente']},
+  contratos:   {title:'Contratos',               action:'',                    modal:null,        roles:['admin','atendente']},
+  calendario:  {title:'Calendário',              action:'',                    modal:null,        roles:['admin','atendente']},
+  chat:        {title:'Chat WhatsApp',           action:'',                    modal:null,        roles:['admin','atendente']},
+  usuarios:    {title:'Usuários & Acessos',      action:'',                    modal:null,        roles:['admin']},
+  investidores:{title:'Minha Carteira',          action:'',                    modal:null,        roles:['admin','investidor']},
+  denied:      {title:'Acesso negado',           action:'',                    modal:null,        roles:['admin','atendente','investidor']},
 };
 
 function goPage(id, navEl){
@@ -34,7 +35,13 @@ function goPage(id, navEl){
   const btn=document.getElementById('primary-action');
   btn.style.display=c.action?'':'none';
   btn.textContent=c.action;
-  if(c.modal) btn.onclick=()=>openModal(c.modal, id==='motos'?'moto':id==='carros'?'carro':null);
+  if(c.modal){
+    if(id==='reservas'){
+      btn.onclick = ()=>abrirModalReserva();
+    } else {
+      btn.onclick = ()=>openModal(c.modal, id==='motos'?'moto':id==='carros'?'carro':null);
+    }
+  }
   if(id==='contratos'){previewContrato();populateContratosSelects();}
   if(id==='calendario'){renderCal();}
   if(id==='chat'){
@@ -50,11 +57,20 @@ function goPage(id, navEl){
   if(id==='investidores'){renderInvestidores();}
   if(id==='historico'){renderHistVeiculosList();}
   if(id==='carros'||id==='motos'){preencherSelectInvestidores();}
+  if(id==='reservas'){renderReservas();}
 }
 
 // ══ DATA LOADING ══
 async function carregarTudo(){
-  await Promise.all([loadVeiculos(),loadClientes(),loadLocacoes(),loadManutencoes(),loadPerfis()]);
+  await Promise.all([
+    loadVeiculos(),
+    loadClientes(),
+    loadLocacoes(),
+    loadManutencoes(),
+    loadPerfis(),
+    loadReservas(),
+  ]);
+  expirarReservas();
   renderDashboard();
   const loading = document.getElementById('app-loading');
   if(loading) loading.style.display='none';
@@ -72,6 +88,13 @@ async function loadClientes(){const {data}=await sb.from('clientes').select('*')
 async function loadLocacoes(){const {data}=await sb.from('locacoes').select('*,veiculos(*),clientes(*)').eq('status','ativa').order('data_fim',{ascending:false});if(data) allLocacoes=data;}
 async function loadManutencoes(){const {data}=await sb.from('manutencoes').select('*,veiculos(*)').order('created_at',{ascending:false});allManutencoes=data||[];}
 async function loadPerfis(){const {data}=await sb.from('perfis').select('*').order('nome');allPerfis=data||[];}
+async function loadReservas(){
+  const {data}=await sb.from('reservas')
+    .select('*')
+    .order('created_at',{ascending:false})
+    .limit(100);
+  allReservas=data||[];
+}
 
 // ══ DASHBOARD ══
 function renderDashboard(){
@@ -92,8 +115,7 @@ function renderDashboard(){
   const meusLocs = isInv
     ? allLocacoes.filter(l=>meusLocIds.has(l.veiculo_id))
     : allLocacoes;
-  const locAtivas = meusLocs.filter(l=>l.status==='ativa'||!l.status);
-  document.getElementById('st-locacoes').textContent=locAtivas.length;
+  document.getElementById('st-locacoes').textContent=meusLocs.filter(l=>l.status==='ativa'||!l.status).length;
 
   const atrasados = meusLocs.filter(l=>Math.ceil((new Date(l.data_fim)-new Date())/86400000) < 0);
   const alertVal = document.getElementById('st-alert-val');
@@ -120,6 +142,28 @@ function renderDashboard(){
       <td><span class="badge ${b}">${lb}</span></td>
     </tr>`;
   }).join(''):'<tr class="empty-row"><td colspan="4">Nenhuma locação ativa</td></tr>';
+
+  // Reservas ativas no dashboard
+  const dr = document.getElementById('dash-reservas');
+  if(dr){
+    const reservasAtivas = allReservas.filter(r=>r.status==='ativa');
+    dr.innerHTML = reservasAtivas.length ? reservasAtivas.map(r=>{
+      const cli  = allClientes.find(c=>c.id===r.cliente_id);
+      const veic = allVeiculos.find(v=>v.id===r.veiculo_id);
+      const diff = Math.ceil((new Date(r.data_inicio)-new Date())/86400000);
+      const lblDiff = diff<=0?'Hoje':`em ${diff} dia${diff>1?'s':''}`;
+      return `<tr style="cursor:pointer" onclick="goPage('reservas')" title="Ver reservas">
+        <td><div style="display:flex;align-items:center;gap:8px">
+          <div class="vi ${veic?.tipo==='carro'?'vi-car':'vi-moto'}">${veic?.tipo==='carro'?'🚗':'🏍️'}</div>
+          <div><div style="font-weight:500">${veic?.marca||'—'} ${veic?.modelo||''}</div>
+          <div style="font-size:11px;color:var(--muted)">${veic?.placa||''}</div></div>
+        </div></td>
+        <td>${cli?.nome||'—'}</td>
+        <td>${fmtDt(r.data_inicio)}</td>
+        <td><span class="badge badge-blue">${lblDiff}</span></td>
+      </tr>`;
+    }).join('') : '<tr class="empty-row"><td colspan="4">Nenhuma reserva ativa</td></tr>';
+  }
 
   const dm=document.getElementById('dash-man');
   const meusMantIds = new Set(meusVeiculos.map(v=>v.id));
