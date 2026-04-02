@@ -653,75 +653,110 @@ function renderCal(){
 function changeMonth(dir){ calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} renderCal(); }
 
 async function calSelectDay(d){
-  // Marca dia selecionado visualmente
+  // Marca dia selecionado
   document.querySelectorAll('.cal-day.selected').forEach(el=>el.classList.remove('selected'));
   const dayEl = document.getElementById(`cal-d-${d}`);
   if(dayEl) dayEl.classList.add('selected');
 
   document.getElementById('cal-sel-date').textContent=`${d} de ${MONTHS[calMonth]}`;
-  const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  const dsDate = new Date(ds+'T23:59:59'); // fim do dia selecionado
-  const dsDayStart = new Date(ds+'T00:00:00');
+  const wrap = document.getElementById('cal-veic-list');
 
-  const {data:locs}=await sb.from('locacoes').select('*,veiculos(*)').lte('data_inicio',ds).gte('data_fim',ds).eq('status','ativa');
-  const locIds=(locs||[]).map(l=>l.veiculo_id);
-  const resIds=allReservas.filter(r=>r.status==='ativa'&&r.data_inicio?.slice(0,10)<=ds&&r.data_fim?.slice(0,10)>=ds).map(r=>r.veiculo_id);
+  // Loading imediato
+  wrap.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:30px;color:var(--muted)">
+    <div style="width:18px;height:18px;border:2px solid #E2E8F0;border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite"></div>
+    <span style="font-size:13px">Carregando disponibilidade...</span>
+  </div>`;
 
-  // Veículos que devolvem HOJE — calcula horário liberado (devolução + 4h)
-  const devolvemHoje = (locs||[]).filter(l=>{
-    const fimDate = l.data_fim_hora ? new Date(l.data_fim_hora) : new Date(l.data_fim+'T12:00:00');
-    return fimDate.toDateString() === dsDayStart.toDateString();
+  const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+  // Busca locações que cobrem esse dia
+  const {data:locs} = await sb.from('locacoes')
+    .select('id,veiculo_id,data_inicio,data_fim,data_inicio_hora,data_fim_hora')
+    .lte('data_inicio', ds)
+    .gte('data_fim', ds)
+    .eq('status','ativa');
+
+  // IDs alugados no dia
+  const locMap = {}; // veiculo_id -> locacao
+  (locs||[]).forEach(l=>{ locMap[l.veiculo_id]=l; });
+
+  // Reservas que cobrem esse dia
+  const resMap = {}; // veiculo_id -> reserva
+  allReservas.filter(r=>r.status==='ativa').forEach(r=>{
+    const ini = r.data_inicio?.slice(0,10)||'';
+    const fim = r.data_fim?.slice(0,10)||'';
+    if(ini<=ds && fim>=ds) resMap[r.veiculo_id]=r;
   });
-  const bufferMap = {}; // veiculo_id -> horário liberado
-  devolvemHoje.forEach(l=>{
-    const fimDate = l.data_fim_hora ? new Date(l.data_fim_hora) : new Date(l.data_fim+'T12:00:00');
-    const liberadoEm = new Date(fimDate.getTime() + 4*60*60*1000);
-    bufferMap[l.veiculo_id] = liberadoEm;
-  });
 
-  document.getElementById('cal-veic-list').innerHTML=allVeiculos.map(v=>{
-    const isAlugado = locIds.includes(v.id);
-    const isReservado = resIds.includes(v.id);
-    const devolvendo = bufferMap[v.id];
+  // Helper: extrai hora de string datetime
+  const getHora = (str)=>{
+    if(!str) return null;
+    try{
+      // suporta "2026-04-06T08:30" ou "2026-04-06 08:30:00" ou só "2026-04-06"
+      const d2 = new Date(str.replace(' ','T'));
+      if(isNaN(d2)) return null;
+      return d2;
+    }catch(e){return null;}
+  };
 
-    let badge, label, extra='';
+  const fmt = (dt)=> dt ? dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '—';
+  const agora = new Date();
+
+  wrap.innerHTML = allVeiculos.map(v=>{
+    let badge='badge-green', label='Disponível', extra='';
 
     if(v.status==='manutencao'){
       badge='badge-yellow'; label='Manutenção';
-    } else if(isAlugado && devolvendo){
-      // Devolve hoje — mostra horário liberado
-      const agora = new Date();
-      const jaLiberado = agora >= devolvendo;
-      const horaLib = devolvendo.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-      if(jaLiberado){
-        badge='badge-green'; label='Disponível';
-        extra=`<div style="font-size:10px;color:#16a34a;margin-top:2px">✓ Liberado (devolvido hoje)</div>`;
+
+    } else if(locMap[v.id]){
+      const loc = locMap[v.id];
+      // Verifica se devolve NESSE DIA
+      const fimDia = (loc.data_fim_hora ? getHora(loc.data_fim_hora) : null) || new Date(loc.data_fim+'T23:59:00');
+      const devolvHoje = loc.data_fim === ds;
+
+      if(devolvHoje){
+        // Calcula buffer 4h
+        const fimReal = getHora(loc.data_fim_hora) || new Date(ds+'T12:00:00');
+        const liberaEm = new Date(fimReal.getTime() + 4*60*60*1000);
+        const horaFim  = fmt(fimReal);
+        const horaLib  = fmt(liberaEm);
+
+        if(agora >= liberaEm){
+          badge='badge-green'; label='Disponível';
+          extra=`<div style="font-size:10px;color:#16a34a;margin-top:2px">✓ Devolvido às ${horaFim} · já liberado</div>`;
+        } else {
+          badge='badge-yellow'; label='Retorna hoje';
+          // Verifica se há reserva iniciando hoje para esse veículo
+          const resHoje = allReservas.find(r=>r.status==='ativa'&&r.veiculo_id===v.id&&r.data_inicio?.slice(0,10)===ds);
+          let alertaRes = '';
+          if(resHoje){
+            const horaRes = fmt(getHora(resHoje.data_inicio_hora)||getHora(resHoje.data_inicio));
+            const cor = liberaEm > (getHora(resHoje.data_inicio_hora)||liberaEm) ? '#dc2626' : '#d97706';
+            alertaRes = `<span style="color:${cor};font-weight:700"> · ⚠️ Reserva às ${horaRes}</span>`;
+          }
+          extra=`<div style="font-size:10px;color:#d97706;margin-top:2px">🕐 Devolve às ${horaFim} · libera às ${horaLib}${alertaRes}</div>`;
+        }
       } else {
-        // Verifica se já tem reserva para depois do buffer
-        const proxReserva = allReservas.find(r=>r.status==='ativa'&&r.veiculo_id===v.id&&r.data_inicio?.slice(0,10)===ds);
-        const alertaReserva = proxReserva ? ` · <span style="color:#dc2626;font-weight:700">⚠️ Reserva às ${proxReserva.data_inicio_hora?new Date(proxReserva.data_inicio_hora).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):ds}</span>` : '';
-        badge='badge-yellow'; label='Retorna hoje';
-        extra=`<div style="font-size:10px;color:#d97706;margin-top:2px">🕐 Libera às ${horaLib} (buffer 4h)${alertaReserva}</div>`;
+        badge='badge-red'; label='Alugado';
+        extra=`<div style="font-size:10px;color:#dc2626;margin-top:2px">📅 Devolução: ${loc.data_fim.split('-').reverse().join('/')}</div>`;
       }
-    } else if(isAlugado){
-      badge='badge-red'; label='Alugado';
-    } else if(isReservado){
-      // Verifica se a reserva começa hoje — mostra horário
-      const reserva = allReservas.find(r=>r.status==='ativa'&&r.veiculo_id===v.id&&r.data_inicio?.slice(0,10)===ds);
-      if(reserva){
-        const inicioRes = reserva.data_inicio_hora ? new Date(reserva.data_inicio_hora) : new Date(ds+'T08:00:00');
-        const horaIni = inicioRes.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-        badge='badge-blue'; label='Reservado';
-        extra=`<div style="font-size:10px;color:#2563eb;margin-top:2px">📅 Retirada prevista às ${horaIni}</div>`;
+
+    } else if(resMap[v.id]){
+      const res = resMap[v.id];
+      const iniciaHoje = res.data_inicio?.slice(0,10) === ds;
+      const terminaHoje = res.data_fim?.slice(0,10) === ds;
+
+      badge='badge-blue'; label='Reservado';
+      if(iniciaHoje){
+        const horaIni = fmt(getHora(res.data_inicio_hora) || getHora(res.data_inicio));
+        extra=`<div style="font-size:10px;color:#2563eb;margin-top:2px">📅 Retirada às ${horaIni}</div>`;
+      } else if(terminaHoje){
+        const horaFim2 = fmt(getHora(res.data_fim_hora) || getHora(res.data_fim));
+        extra=`<div style="font-size:10px;color:#2563eb;margin-top:2px">🏁 Devolução prevista às ${horaFim2}</div>`;
       } else {
-        // Reserva em andamento no período
-        const resAtiva = allReservas.find(r=>r.status==='ativa'&&r.veiculo_id===v.id);
-        const fimRes = resAtiva?.data_fim?.slice(0,10);
-        badge='badge-blue'; label='Reservado';
-        if(fimRes) extra=`<div style="font-size:10px;color:#2563eb;margin-top:2px">🗓️ Reservado até ${fimRes.split('-').reverse().join('/')}</div>`;
+        const fimStr = res.data_fim?.slice(0,10);
+        if(fimStr) extra=`<div style="font-size:10px;color:#2563eb;margin-top:2px">🗓️ Reservado até ${fimStr.split('-').reverse().join('/')}</div>`;
       }
-    } else {
-      badge='badge-green'; label='Disponível';
     }
 
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
