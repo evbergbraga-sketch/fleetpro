@@ -279,23 +279,37 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
       <div class="page" id="page-contratos">
 
         <!-- SELEÇÃO DE TIPO -->
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-          <span style="font-size:12px;font-weight:600;color:var(--muted)">Tipo de contrato:</span>
-          <button class="btn-tipo-contrato active" data-tipo="moto" onclick="selecionarTipoContrato('moto')"
-            style="display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;border:2px solid var(--accent);background:var(--accent);color:#fff;font-weight:600;cursor:pointer;font-size:13px;transition:all .15s">
-            🏍️ Moto
-          </button>
-          <button class="btn-tipo-contrato" data-tipo="carro" onclick="selecionarTipoContrato('carro')"
-            style="display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;border:2px solid var(--border2);background:transparent;color:var(--muted);font-weight:600;cursor:pointer;font-size:13px;transition:all .15s">
-            🚗 Carro
-          </button>
-          <span id="c-num-display" style="margin-left:auto;font-size:12px;color:var(--muted);background:var(--bg2);padding:6px 12px;border-radius:6px;border:1px solid var(--border2)">Contrato #1</span>
-        </div>
-
         <style>
-          .btn-tipo-contrato.active { border-color:var(--accent)!important;background:var(--accent)!important;color:#fff!important; }
-          .btn-tipo-contrato:not(.active):hover { border-color:var(--accent)!important;color:var(--accent)!important; }
+          .btn-tipo-contrato {
+            display:flex;align-items:center;gap:8px;padding:14px 24px;
+            border-radius:10px;border:2px solid var(--border2);
+            background:var(--card);color:var(--muted);
+            font-weight:700;cursor:pointer;font-size:14px;
+            transition:all .15s;flex:1;justify-content:center;
+          }
+          .btn-tipo-contrato.active {
+            border-color:var(--accent)!important;
+            background:var(--accent)!important;
+            color:#fff!important;
+            box-shadow:0 2px 12px rgba(37,99,235,.25);
+          }
+          .btn-tipo-contrato:not(.active):hover {
+            border-color:var(--accent);color:var(--accent);
+            background:rgba(37,99,235,.04);
+          }
         </style>
+        <div style="background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:16px 20px;margin-bottom:16px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Selecione o tipo de contrato</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button class="btn-tipo-contrato active" data-tipo="moto" onclick="selecionarTipoContrato('moto')">
+              🏍️ Contrato de Moto
+            </button>
+            <button class="btn-tipo-contrato" data-tipo="carro" onclick="selecionarTipoContrato('carro')">
+              🚗 Contrato de Carro
+            </button>
+            <span id="c-num-display" style="display:flex;align-items:center;margin-left:auto;font-size:13px;font-weight:700;color:var(--accent);background:rgba(37,99,235,.06);padding:8px 16px;border-radius:8px;border:1px solid rgba(37,99,235,.2)">📋 Contrato #1</span>
+          </div>
+        </div>
 
         <div class="grid2">
           <!-- FORMULÁRIO -->
@@ -374,7 +388,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
 
             <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
               <button class="btn btn-primary btn-registrar" onclick="registrarContrato()" style="flex:1;min-width:160px">📄 Registrar contrato</button>
-              <button class="btn btn-ghost" onclick="gerarPdfContrato(_peekNumContrato(), previewContrato())" style="padding:8px 14px">⬇️ Baixar PDF</button>
+              <button class="btn btn-ghost" onclick="_baixarPdfSemRegistrar()" style="padding:8px 14px">⬇️ Baixar PDF</button>
             </div>
             <div id="ct-aviso-reserva" style="display:none;margin-top:10px;padding:8px 12px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;font-size:11px;color:#92400e;"></div>
           </div>
