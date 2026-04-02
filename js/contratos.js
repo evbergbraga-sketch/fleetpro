@@ -697,13 +697,29 @@ async function calSelectDay(d){
         badge='badge-green'; label='Disponível';
         extra=`<div style="font-size:10px;color:#16a34a;margin-top:2px">✓ Liberado (devolvido hoje)</div>`;
       } else {
+        // Verifica se já tem reserva para depois do buffer
+        const proxReserva = allReservas.find(r=>r.status==='ativa'&&r.veiculo_id===v.id&&r.data_inicio?.slice(0,10)===ds);
+        const alertaReserva = proxReserva ? ` · <span style="color:#dc2626;font-weight:700">⚠️ Reserva às ${proxReserva.data_inicio_hora?new Date(proxReserva.data_inicio_hora).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):ds}</span>` : '';
         badge='badge-yellow'; label='Retorna hoje';
-        extra=`<div style="font-size:10px;color:#d97706;margin-top:2px">🕐 Libera às ${horaLib} (buffer 4h)</div>`;
+        extra=`<div style="font-size:10px;color:#d97706;margin-top:2px">🕐 Libera às ${horaLib} (buffer 4h)${alertaReserva}</div>`;
       }
     } else if(isAlugado){
       badge='badge-red'; label='Alugado';
     } else if(isReservado){
-      badge='badge-blue'; label='Reservado';
+      // Verifica se a reserva começa hoje — mostra horário
+      const reserva = allReservas.find(r=>r.status==='ativa'&&r.veiculo_id===v.id&&r.data_inicio?.slice(0,10)===ds);
+      if(reserva){
+        const inicioRes = reserva.data_inicio_hora ? new Date(reserva.data_inicio_hora) : new Date(ds+'T08:00:00');
+        const horaIni = inicioRes.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+        badge='badge-blue'; label='Reservado';
+        extra=`<div style="font-size:10px;color:#2563eb;margin-top:2px">📅 Retirada prevista às ${horaIni}</div>`;
+      } else {
+        // Reserva em andamento no período
+        const resAtiva = allReservas.find(r=>r.status==='ativa'&&r.veiculo_id===v.id);
+        const fimRes = resAtiva?.data_fim?.slice(0,10);
+        badge='badge-blue'; label='Reservado';
+        if(fimRes) extra=`<div style="font-size:10px;color:#2563eb;margin-top:2px">🗓️ Reservado até ${fimRes.split('-').reverse().join('/')}</div>`;
+      }
     } else {
       badge='badge-green'; label='Disponível';
     }
