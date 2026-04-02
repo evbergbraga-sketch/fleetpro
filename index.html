@@ -174,7 +174,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
           <div id="st-alert-card" class="stat-card" style="--accent-color:#dc2626"><div class="stat-icon">⚠️</div><div class="stat-label">Alertas de atraso</div><div class="stat-val" id="st-alert-val" style="color:#dc2626">—</div><div class="stat-sub" id="st-alert-sub">verificando...</div></div>
         </div>
         <div class="stats-grid" style="grid-template-columns:repeat(1,1fr);margin-bottom:8px">
-          <div class="stat-card" style="--accent-color:#0891b2;display:flex;align-items:center;padding:14px 20px"><div class="stat-icon" style="position:relative;font-size:18px">📋</div><div style="flex:1"><div class="stat-label">Locações ativas em andamento</div><div class="stat-val" id="st-locacoes" style="color:#0891b2;font-size:24px;margin:2px 0">—</div></div></div>
+          <div class="stat-card" onclick="goPage('locacoes')" style="--accent-color:#0891b2;display:flex;align-items:center;padding:14px 20px;cursor:pointer;transition:transform .15s,box-shadow .15s" onclick="goPage('locacoes')" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(8,145,178,.2)'" onmouseout="this.style.transform='';this.style.boxShadow=''"><div class="stat-icon" style="position:relative;font-size:18px">📋</div><div style="flex:1"><div class="stat-label">Locações ativas em andamento</div><div class="stat-val" id="st-locacoes" style="color:#0891b2;font-size:24px;margin:2px 0">—</div></div><div style="font-size:11px;color:#0891b2;opacity:.7">Ver todas →</div></div>
         </div>
         <!-- RESERVAS NO DASHBOARD -->
         <div class="card" style="margin-bottom:16px">
