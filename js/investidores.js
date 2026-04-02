@@ -304,10 +304,18 @@ function renderInvestidores(){
 
   const ids           = new Set(veiculosFinal.map(v=>v.id));
   const locsFinal     = allLocacoes.filter(l=>ids.has(l.veiculo_id));
+  const hoje          = new Date();
   const qtdMotos      = veiculosFinal.filter(v=>v.tipo==='moto').length;
+  // Veículos "em preparação": ainda dentro do buffer de 30 dias
+  const emPrepLista   = veiculosFinal.filter(v=>v.status==='preparacao'&&v.data_entrada&&
+    Math.ceil((hoje-new Date(v.data_entrada))/86400000)<30);
+  // Veículos ativos no rendimento: todos exceto os ainda em preparação
+  const qtdAtivos     = veiculosFinal.filter(v=>v.tipo==='moto'&&
+    !(v.status==='preparacao'&&v.data_entrada&&Math.ceil((hoje-new Date(v.data_entrada))/86400000)<30)).length;
   const investimento  = qtdMotos * VALOR_MOTO;
-  window._invInvestimento = investimento; // expõe para _renderAcumulado
-  const rendMensal    = qtdMotos * RENDIMENTO_MES;
+  window._invInvestimento = investimento;
+  window._invEmPrep   = emPrepLista;
+  const rendMensal    = qtdAtivos * RENDIMENTO_MES;
   const rendAnual     = rendMensal * 12;
   const rentabilidade = investimento > 0 ? ((rendMensal/investimento)*100).toFixed(2) : '0.00';
   const totalVeic     = veiculosFinal.length;
@@ -421,6 +429,9 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
     </div>
   </div>
 
+  <!-- EM PREPARAÇÃO -->
+  ${_renderEmPreparacao(veiculosFinal)}
+
   <!-- RENDIMENTO ACUMULADO -->
   <div class="inv-card" id="inv-card-acumulado">
     <div class="inv-card-header">
@@ -436,14 +447,27 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
   <div class="inv-card">
     <div class="inv-card-header">
       <span class="inv-card-title">📊 Projeção de rendimentos</span>
+      <span style="font-size:10px;color:${INV_THEME.gray}">inclui veículos em preparação após 30d</span>
     </div>
     <div class="inv-proj-grid">
-      ${[1,3,6,12].map(m=>`
+      ${[1,3,6,12].map(m=>{
+        // Calcula quantos veículos em prep estarão ativos nesse período
+        const prepAtivosNoMes = (window._invEmPrep||[]).filter(v=>{
+          if(!v.data_entrada) return false;
+          const diasDeEntrada = Math.ceil((new Date()-new Date(v.data_entrada))/86400000);
+          const diasRestantes = 30 - diasDeEntrada;
+          return (m*30) >= diasRestantes; // vai estar ativo dentro desse período
+        }).length;
+        const rendProj = rendMensal*m + prepAtivosNoMes*RENDIMENTO_MES*m;
+        const extra = prepAtivosNoMes>0?`<div style="font-size:9px;color:${INV_THEME.green};margin-top:2px">+${prepAtivosNoMes} moto${prepAtivosNoMes!==1?'s':''} em prep.</div>`:'';
+        return `
         <div class="inv-proj-item">
           <div class="inv-proj-mes">${m} ${m===1?'mês':'meses'}</div>
-          <div class="inv-proj-val">R$ ${(rendMensal*m).toLocaleString('pt-BR')}</div>
-          <div class="inv-proj-pct">${investimento>0?((rendMensal*m/investimento)*100).toFixed(1):0}% do capital</div>
-        </div>`).join('')}
+          <div class="inv-proj-val">R$ ${rendProj.toLocaleString('pt-BR')}</div>
+          <div class="inv-proj-pct">${investimento>0?((rendProj/investimento)*100).toFixed(1):0}% do capital</div>
+          ${extra}
+        </div>`;
+      }).join('')}
     </div>
   </div>
 
@@ -495,6 +519,70 @@ async function _carregarPagamentos(invId){
   _invPagamentos = data||[];
   _renderPagamentosLista();
   _renderAcumulado(_invPagamentos);
+}
+
+// ══ EM PREPARAÇÃO ══
+function _renderEmPreparacao(veiculosFinal){
+  const hoje = new Date();
+  const emPrep = veiculosFinal.filter(v=>v.status==='preparacao'&&v.data_entrada);
+  if(!emPrep.length) return '';
+
+  const rows = emPrep.map(v=>{
+    const entrada   = new Date(v.data_entrada);
+    const diasPassados = Math.ceil((hoje - entrada)/86400000);
+    const diasRestantes = Math.max(0, 30 - diasPassados);
+    const pct = Math.min(100, Math.round((diasPassados/30)*100));
+    const pronto = diasRestantes === 0;
+    const dataLiber = new Date(entrada.getTime() + 30*86400000);
+    const dataLiberStr = dataLiber.toLocaleDateString('pt-BR');
+    const barColor = pronto ? '#f0c040' : pct >= 70 ? INV_THEME.green : '#2980b9';
+
+    return `
+    <div style="background:${INV_THEME.bgCard2};border:1px solid ${INV_THEME.border2};border-radius:10px;padding:14px 16px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">🏍️</span>
+          <div>
+            <div style="font-weight:700;color:#fff;font-size:14px">${v.marca} ${v.modelo}</div>
+            <div style="font-size:11px;color:#555;font-family:monospace">${v.placa}</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          ${pronto
+            ? `<span style="background:rgba(240,192,64,.15);color:#f0c040;border:1px solid rgba(240,192,64,.3);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">✓ Pronto para locar</span>`
+            : `<span style="background:rgba(41,128,185,.12);color:#2980b9;border:1px solid rgba(41,128,185,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">⚙️ Em preparação</span>`
+          }
+        </div>
+      </div>
+      <!-- Barra de progresso -->
+      <div style="background:#1a1a1a;border-radius:99px;height:8px;margin-bottom:8px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#1a5276,${barColor});border-radius:99px;transition:width .6s ease"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#555">
+        <span>Entrada: ${entrada.toLocaleDateString('pt-BR')}</span>
+        ${pronto
+          ? `<span style="color:#f0c040;font-weight:700">Disponível desde ${dataLiberStr}</span>`
+          : `<span>${diasPassados}d de 30 · <span style="color:${INV_THEME.green}">libera em ${diasRestantes}d (${dataLiberStr})</span></span>`
+        }
+      </div>
+      ${pronto ? `
+      <div style="margin-top:10px;padding:8px 12px;background:rgba(240,192,64,.06);border:1px solid rgba(240,192,64,.15);border-radius:8px;font-size:11px;color:#f0c040">
+        🎉 Período de preparação concluído! Este veículo já está incluído no rendimento mensal.
+      </div>` : `
+      <div style="margin-top:8px;font-size:11px;color:#444">
+        📈 Rendimento a partir de ${dataLiberStr}: <strong style="color:${INV_THEME.green}">R$ ${RENDIMENTO_MES.toLocaleString('pt-BR')}/mês</strong>
+      </div>`}
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="inv-card" style="border-color:rgba(41,128,185,.3)">
+    <div class="inv-card-header" style="border-bottom-color:rgba(41,128,185,.2)">
+      <span class="inv-card-title">⚙️ Em preparação</span>
+      <span style="font-size:11px;color:#2980b9;font-weight:600">${emPrep.length} veículo${emPrep.length!==1?'s':''}</span>
+    </div>
+    <div style="padding:14px 16px">${rows}</div>
+  </div>`;
 }
 
 function _renderPagamentosVazio(){
