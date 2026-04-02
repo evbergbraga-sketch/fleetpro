@@ -4,7 +4,7 @@ let sb = null;
 let currentUser = null, currentPerfil = null;
 let allVeiculos=[], allClientes=[], allLocacoes=[], allManutencoes=[], allPerfis=[], allReservas=[], allLocacoesCompletas=[];
 let histVeiculoId = null, chatMsgs = {}, activeChatId = null;
-let calYear=new Date().getFullYear(), calMonth=2;
+let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 // ══ ROLES CONFIG ══
 const ROLE_MENUS = {
