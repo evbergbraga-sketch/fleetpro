@@ -49,12 +49,30 @@ function renderLocacoes(){
 
 // ══ LOAD LOCAÇÕES COMPLETAS ══
 async function loadLocacoesCompletas(){
-  const {data} = await sb.from('locacoes')
-    .select('*,veiculos(*),clientes(*)')
+  const {data, error} = await sb.from('locacoes')
+    .select(`
+      id, veiculo_id, cliente_id, data_inicio, data_fim,
+      km_inicial, km_final, diaria, total, status, observacoes,
+      criado_por, created_at,
+      num_contrato, tipo_contrato, local_retirada, caucao,
+      forma_pgto, servicos_adicionais,
+      data_inicio_hora, data_fim_hora,
+      veiculos(id, marca, modelo, placa, tipo, km_atual),
+      clientes(id, nome, cpf, telefone, email)
+    `)
     .eq('status','ativa')
     .order('data_fim',{ascending:true});
+  if(error){
+    // Fallback sem campos novos caso SQL não tenha rodado ainda
+    const {data:data2} = await sb.from('locacoes')
+      .select('*,veiculos(id,marca,modelo,placa,tipo,km_atual),clientes(id,nome,cpf,telefone,email)')
+      .eq('status','ativa')
+      .order('data_fim',{ascending:true});
+    allLocacoesCompletas = data2||[];
+    allLocacoes = data2||[];
+    return;
+  }
   allLocacoesCompletas = data||[];
-  // Atualiza allLocacoes também para o dashboard
   allLocacoes = data||[];
 }
 
