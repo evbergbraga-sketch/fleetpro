@@ -309,15 +309,14 @@ function renderInvestidores(){
   // Veículos "em preparação": ainda dentro do buffer de 30 dias
   const emPrepLista   = veiculosFinal.filter(v=>v.status==='preparacao'&&
     Math.ceil((hoje-new Date(v.data_entrada||v.created_at))/86400000)<30);
-  // Veículos ativos no rendimento: TODAS as motos exceto as ainda em preparação (30d)
-  // Status alugado/disponivel/reservado/manutencao = todas rendem
-  const qtdAtivos     = veiculosFinal.filter(v=>v.tipo==='moto'&&v.status!=='preparacao').length
-    + veiculosFinal.filter(v=>v.tipo==='moto'&&v.status==='preparacao'&&
-        Math.ceil((hoje-new Date(v.data_entrada||v.created_at))/86400000)>=30).length;
-  const investimento  = qtdMotos * VALOR_MOTO;
+  // Rendimento fixo: TODAS as motos rendem R$ 825/mês
+  // Única exceção: motos nos primeiros 30 dias de preparação
+  const qtdEmPrepAtiva = emPrepLista.length;
+  const qtdAtivos      = qtdMotos - qtdEmPrepAtiva;
+  const investimento   = qtdMotos * VALOR_MOTO;
   window._invInvestimento = investimento;
   window._invEmPrep   = emPrepLista;
-  const rendMensal    = qtdAtivos * RENDIMENTO_MES;
+  const rendMensal    = qtdAtivos * RENDIMENTO_MES; // ex: 2 motos - 1 prep = 1 × 825 = 825 até liberar
   const rendAnual     = rendMensal * 12;
   const rentabilidade = investimento > 0 ? ((rendMensal/investimento)*100).toFixed(2) : '0.00';
   const totalVeic     = veiculosFinal.length;
@@ -393,7 +392,7 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
       <span class="inv-stat-icon">💰</span>
       <div class="inv-stat-label">Rendimento mensal</div>
       <div class="inv-stat-val">R$ ${rendMensal.toLocaleString('pt-BR')}</div>
-      <div class="inv-stat-sub">${qtdMotos} × R$ ${RENDIMENTO_MES}/mês</div>
+      <div class="inv-stat-sub">${qtdAtivos} moto${qtdAtivos!==1?"s":""} × R$ ${RENDIMENTO_MES}/mês${qtdEmPrepAtiva>0?" · "+qtdEmPrepAtiva+" em prep.":""}</div>
     </div>
     <div class="inv-stat">
       <span class="inv-stat-icon">📅</span>
