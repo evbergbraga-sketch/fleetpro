@@ -1,8 +1,7 @@
 // locacoes.js — Aba de Locações em andamento + Checklist de vistoria
 
-let allLocacoesCompletas = []; // locações com joins completos
+// allLocacoesCompletas declarado em config.js
 let _checklistItens = [];      // itens padrão do checklist
-let _fotosSelecionadas = [];   // fotos para upload
 
 // ══ RENDER LISTA DE LOCAÇÕES ══
 function renderLocacoes(){
