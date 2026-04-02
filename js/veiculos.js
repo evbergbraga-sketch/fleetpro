@@ -1,9 +1,10 @@
 // veiculos.js — Gestão de veículos
 
 function statusBadge(s){
-  return s==='disponivel'?'<span class="badge badge-green">Disponível</span>':
-         s==='alugado'   ?'<span class="badge badge-red">Alugado</span>':
-                          '<span class="badge badge-yellow">Manutenção</span>';
+  return s==='disponivel' ? '<span class="badge badge-green">Disponível</span>'
+       : s==='alugado'    ? '<span class="badge badge-red">Alugado</span>'
+       : s==='reservado'  ? '<span class="badge badge-blue">Reservado</span>'
+                          : '<span class="badge badge-yellow">Manutenção</span>';
 }
 
 function renderVeiculos(){
@@ -45,7 +46,6 @@ function renderVeiculos(){
 function editarVeiculo(id){
   const v = allVeiculos.find(x=>x.id===id);
   if(!v) return;
-  // Preenche modal de edição
   document.getElementById('ev-id').value   = v.id;
   document.getElementById('ev-tipo').value  = v.tipo;
   document.getElementById('ev-marca').value = v.marca||'';
@@ -58,7 +58,6 @@ function editarVeiculo(id){
   document.getElementById('ev-diaria').value= v.diaria||'';
   document.getElementById('ev-status').value= v.status||'disponivel';
   document.getElementById('ev-obs').value   = v.observacoes||'';
-  // Investidor
   preencherSelectInvestidores('ev-investidor').then(()=>{
     const sel = document.getElementById('ev-investidor');
     if(sel) sel.value = v.investidor_id||'';
