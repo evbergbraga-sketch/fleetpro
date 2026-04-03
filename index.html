@@ -864,6 +864,22 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
       <div id="p-senha-ok"  style="display:none;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:6px;padding:8px 12px;font-size:12px;color:#16a34a;margin-bottom:10px"></div>
 
       <button class="btn btn-primary" id="btn-alterar-senha" style="width:100%" onclick="alterarSenha()">🔒 Alterar senha</button>
+
+      <!-- DADOS DO INVESTIDOR — só aparece se perfil=investidor -->
+      <div id="mc-inv-section" style="display:none;margin-top:20px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted2);margin-bottom:12px;border-top:1px solid var(--border2);padding-top:16px">🏢 Dados da empresa / investidor</div>
+        <div class="form-grid">
+          <div class="form-group full"><label>Nome / Empresa</label><input type="text" id="inv-empresa" placeholder="Nome ou razão comercial" style="width:100%"></div>
+          <div class="form-group full"><label>Razão social</label><input type="text" id="inv-razao" placeholder="Razão social completa" style="width:100%"></div>
+          <div class="form-group"><label>CNPJ / CPF</label><input type="text" id="inv-cnpj" placeholder="00.000.000/0001-00" style="width:100%"></div>
+          <div class="form-group"><label>Responsável</label><input type="text" id="inv-responsavel" placeholder="Nome do responsável" style="width:100%"></div>
+          <div class="form-group"><label>Telefone</label><input type="text" id="inv-telefone" placeholder="(21) 99999-9999" style="width:100%"></div>
+          <div class="form-group"><label>E-mail</label><input type="text" id="inv-email-emp" placeholder="contato@empresa.com" style="width:100%"></div>
+        </div>
+        <div id="mc-inv-err" style="display:none;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px;padding:8px 12px;font-size:12px;color:#dc2626;margin-bottom:10px"></div>
+        <div id="mc-inv-ok"  style="display:none;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:6px;padding:8px 12px;font-size:12px;color:#16a34a;margin-bottom:10px"></div>
+        <button class="btn btn-primary" style="width:100%" onclick="salvarDadosInvestidor()">💾 Salvar dados da empresa</button>
+      </div>
     </div>
   </div>
 </div>
