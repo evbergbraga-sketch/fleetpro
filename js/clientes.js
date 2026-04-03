@@ -147,12 +147,6 @@ async function confirmarDevolucao(locId, veiculoId, nomeVeiculo){
   }
 }
 
-function salvarPersonalizacao(){
-  const nome = document.getElementById('wpp-nome-locadora')?.value||'FleetPro Locadora';
-  const assin = document.getElementById('wpp-assinatura')?.value||'';
-  localStorage.setItem('fp_personalizacao', JSON.stringify({nome, assin}));
-  notify('Personalização salva!','success');
-}
 
 
 // ══ EXTENSÃO clientes.js — Condutores e Cartões no perfil ══
