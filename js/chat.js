@@ -584,13 +584,7 @@ async function enviarContratoWpp(){
   }
 }
 
-// ── PERFIL CLIENTE ──
-async function verPerfilCliente(){
-  if(!activeChatId){ notify('Selecione um contato','error'); return; }
-  const c = allClientes.find(x=>x.id===activeChatId);
-  if(!c){ notify('Cadastre o cliente para ver o perfil','error'); return; }
-  await _renderPerfilCliente(c);
-}
+// ── PERFIL CLIENTE — função em clientes.js ──
 
 // ── CADASTRAR CLIENTE PELO CHAT ──
 function abrirCadastroClienteChat(){
