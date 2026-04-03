@@ -251,11 +251,62 @@ function abrirMinhaConta(){
   const em = document.getElementById('mc-email-display'); if(em) em.textContent=u.email||'—';
   const rl = document.getElementById('mc-role-display');
   if(rl){ rl.innerHTML=`<span class="role-chip ${p.perfil}" style="font-size:10px">${ROLE_LABELS[p.perfil]||p.perfil}</span>`; }
-  // Limpa campos
+  // Limpa campos de senha
   ['p-senha-atual','p-senha-nova','p-senha-conf'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const errEl=document.getElementById('p-senha-err'); if(errEl) errEl.style.display='none';
   const okEl=document.getElementById('p-senha-ok');   if(okEl)  okEl.style.display='none';
+
+  // Seção investidor — mostra e preenche só se for investidor
+  const invSection = document.getElementById('mc-inv-section');
+  if(invSection){
+    const isInv = p.perfil==='investidor';
+    invSection.style.display = isInv ? '' : 'none';
+    if(isInv){
+      const set = (id,val)=>{ const e=document.getElementById(id); if(e) e.value=val||''; };
+      set('inv-empresa',   p.empresa||p.nome||'');
+      set('inv-razao',     p.razao_social||'');
+      set('inv-cnpj',      p.cnpj_cpf||'');
+      set('inv-responsavel',p.responsavel||'');
+      set('inv-telefone',  p.telefone||'');
+      set('inv-email-emp', p.email_empresa||u.email||'');
+      const errI=document.getElementById('mc-inv-err'); if(errI) errI.style.display='none';
+      const okI =document.getElementById('mc-inv-ok');  if(okI)  okI.style.display='none';
+    }
+  }
+
   document.getElementById('m-minha-conta').classList.add('show');
+}
+
+async function salvarDadosInvestidor(){
+  const btn = document.querySelector('#mc-inv-section .btn-primary');
+  const errEl = document.getElementById('mc-inv-err');
+  const okEl  = document.getElementById('mc-inv-ok');
+  if(errEl) errEl.style.display='none';
+  if(okEl)  okEl.style.display='none';
+  if(btn){ btn.disabled=true; btn.textContent='Salvando...'; }
+
+  const dados = {
+    empresa:       document.getElementById('inv-empresa')?.value.trim()||null,
+    razao_social:  document.getElementById('inv-razao')?.value.trim()||null,
+    cnpj_cpf:      document.getElementById('inv-cnpj')?.value.trim()||null,
+    responsavel:   document.getElementById('inv-responsavel')?.value.trim()||null,
+    telefone:      document.getElementById('inv-telefone')?.value.trim()||null,
+    email_empresa: document.getElementById('inv-email-emp')?.value.trim()||null,
+  };
+
+  try{
+    const {error} = await sb.from('perfis').update(dados).eq('id', currentUser.id);
+    if(error) throw error;
+    // Atualiza currentPerfil em memória
+    Object.assign(currentPerfil, dados);
+    if(okEl){ okEl.textContent='✅ Dados salvos com sucesso!'; okEl.style.display='block'; }
+    notify('Dados da empresa atualizados!','success');
+  }catch(e){
+    if(errEl){ errEl.textContent='Erro: '+e.message; errEl.style.display='block'; }
+    notify('Erro ao salvar: '+e.message,'error');
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='💾 Salvar dados da empresa'; }
+  }
 }
 
 function _senhaErr(msg, el){
