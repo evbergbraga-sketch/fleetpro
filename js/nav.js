@@ -91,6 +91,94 @@ async function loadClientes(){const {data}=await sb.from('clientes').select('*')
 async function loadLocacoes(){const {data}=await sb.from('locacoes').select('*,veiculos(*),clientes(*)').eq('status','ativa').order('data_fim',{ascending:false});if(data) allLocacoes=data;}
 async function loadManutencoes(){const {data}=await sb.from('manutencoes').select('*,veiculos(*)').order('created_at',{ascending:false});allManutencoes=data||[];}
 async function loadPerfis(){const {data}=await sb.from('perfis').select('*').order('nome');allPerfis=data||[];}
+
+function renderUsuarios(){
+  const el = document.getElementById('usuarios-list');
+  if(!el) return;
+  const LABELS = {'admin':'👑 Admin','atendente':'🧑‍💼 Atendente','investidor':'📈 Investidor'};
+  const CORES  = {'admin':'badge-red','atendente':'badge-blue','investidor':'badge-green'};
+  if(!allPerfis.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted2)">Nenhum usuário encontrado.</div>';
+    return;
+  }
+  el.innerHTML = allPerfis.map(p=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:8px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="avatar" style="width:38px;height:38px;font-size:13px;flex-shrink:0">${(p.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>
+        <div>
+          <div style="font-weight:600;font-size:14px">${p.nome||'—'}</div>
+          <div style="font-size:11px;color:var(--muted)">${p.empresa?p.empresa+' · ':''}${p.cnpj_cpf||p.telefone||''}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="badge ${CORES[p.perfil]||'badge-gray'}">${LABELS[p.perfil]||p.perfil}</span>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="editarUsuario('${p.id}')">✏️ Editar</button>
+      </div>
+    </div>`).join('');
+}
+
+async function editarUsuario(id){
+  const p = allPerfis.find(x=>x.id===id);
+  if(!p) return;
+  const isInv = p.perfil==='investidor';
+  // Preenche campos do modal
+  document.getElementById('eu-id').value        = id;
+  document.getElementById('eu-nome').value      = p.nome||'';
+  document.getElementById('eu-perfil').value    = p.perfil||'atendente';
+  document.getElementById('eu-empresa').value   = p.empresa||'';
+  document.getElementById('eu-razao').value     = p.razao_social||'';
+  document.getElementById('eu-cnpj').value      = p.cnpj_cpf||'';
+  document.getElementById('eu-resp').value      = p.responsavel||'';
+  document.getElementById('eu-tel').value       = p.telefone||'';
+  document.getElementById('eu-email-emp').value = p.email_empresa||'';
+  // Mostra/esconde campos investidor
+  const invEl = document.getElementById('eu-campos-inv');
+  if(invEl) invEl.style.display = isInv ? '' : 'none';
+  const errEl=document.getElementById('eu-err'); if(errEl) errEl.style.display='none';
+  const okEl =document.getElementById('eu-ok');  if(okEl)  okEl.style.display='none';
+  document.getElementById('m-editar-usuario').classList.add('show');
+}
+
+function _toggleEuInvestidor(){
+  const p = document.getElementById('eu-perfil')?.value;
+  const el = document.getElementById('eu-campos-inv');
+  if(el) el.style.display = p==='investidor' ? '' : 'none';
+}
+
+async function salvarEdicaoUsuario(){
+  const id   = document.getElementById('eu-id').value;
+  const nome = document.getElementById('eu-nome').value.trim();
+  const perfil = document.getElementById('eu-perfil').value;
+  if(!nome){ notify('Nome obrigatório','error'); return; }
+  const btn=document.getElementById('eu-btn-salvar');
+  const errEl=document.getElementById('eu-err');
+  const okEl =document.getElementById('eu-ok');
+  if(errEl) errEl.style.display='none';
+  if(okEl)  okEl.style.display='none';
+  if(btn){ btn.disabled=true; btn.textContent='Salvando...'; }
+  const obj = {
+    nome, perfil,
+    empresa:       document.getElementById('eu-empresa').value.trim()||null,
+    razao_social:  document.getElementById('eu-razao').value.trim()||null,
+    cnpj_cpf:      document.getElementById('eu-cnpj').value.trim()||null,
+    responsavel:   document.getElementById('eu-resp').value.trim()||null,
+    telefone:      document.getElementById('eu-tel').value.trim()||null,
+    email_empresa: document.getElementById('eu-email-emp').value.trim()||null,
+  };
+  try{
+    const {error} = await sb.from('perfis').update(obj).eq('id',id);
+    if(error) throw error;
+    notify('Usuário atualizado!','success');
+    closeModal('editar-usuario');
+    await loadPerfis();
+    renderUsuarios();
+  }catch(e){
+    if(errEl){ errEl.textContent='Erro: '+e.message; errEl.style.display='block'; }
+    notify('Erro: '+e.message,'error');
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='✓ Salvar alterações'; }
+  }
+}
 async function loadReservas(){
   const {data}=await sb.from('reservas')
     .select('*')
