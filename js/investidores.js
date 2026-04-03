@@ -347,7 +347,7 @@ function renderInvestidores(){
     </div>`;
 
   if(_invPage === 'inv-dashboard'){
-    el.innerHTML = selectorHtml + mobileNav + _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, rendMensal, rendAnual, rentabilidade, ocupFinal, totalVeic);
+    el.innerHTML = selectorHtml + mobileNav + _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, rendMensal, rendAnual, rentabilidade, ocupFinal, totalVeic, qtdEmPrepAtiva, qtdAtivos);
     _carregarPagamentos(isAdmin ? (document.getElementById('inv-selector')?.value||'') : currentUser?.id);
   } else if(_invPage === 'inv-veiculos'){
     el.innerHTML = selectorHtml + mobileNav + _renderInvVeiculos(veiculosFinal);
@@ -358,7 +358,7 @@ function renderInvestidores(){
 }
 
 // ══ DASHBOARD ══
-function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, rendMensal, rendAnual, rentabilidade, ocupFinal, totalVeic){
+function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, rendMensal, rendAnual, rentabilidade, ocupFinal, totalVeic, qtdEmPrepAtiva=0, qtdAtivos=qtdMotos){
   const nomeInv     = currentPerfil?.nome || 'Investidor';
   const alugadas    = veiculosFinal.filter(v=>v.status==='alugado').length;
   const disponiveis = veiculosFinal.filter(v=>v.status==='disponivel').length;
