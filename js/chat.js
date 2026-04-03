@@ -369,7 +369,7 @@ function abrirChat(cid){
   const btnCad = document.getElementById('btn-cadastrar-chat');
   if(btnCad) btnCad.style.display = 'none';
   // Botão SARA
-  _renderBtnSara(c.telefone);
+  if(c.telefone) _checarStatusSara(c.telefone);
   renderChatMsgs(cid);
   renderChatContacts();
 }
