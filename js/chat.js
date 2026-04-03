@@ -1,3 +1,43 @@
+// ══ CONTROLE DA SARA ══
+let _saraStatus = {}; // { numero: 'bloqueado'|'livre' }
+
+function _renderBtnSara(telefone){
+  const wrap = document.getElementById('btn-sara-wrap');
+  if(!wrap) return;
+  if(!telefone){ wrap.innerHTML=''; return; }
+  const num = telefone.replace(/\D/g,'').slice(-11);
+  const bloqueado = _saraStatus[num] === 'bloqueado';
+  wrap.innerHTML = `
+    <button onclick="_toggleSara('${num}')" style="
+      font-size:11px;padding:5px 12px;border-radius:99px;cursor:pointer;font-weight:700;
+      background:${bloqueado?'rgba(22,163,74,.12)':'rgba(239,68,68,.12)'};
+      border:1px solid ${bloqueado?'rgba(22,163,74,.3)':'rgba(239,68,68,.3)'};
+      color:${bloqueado?'#16a34a':'#dc2626'};
+    ">
+      ${bloqueado?'▶️ Liberar SARA':'⏸️ Pausar SARA'}
+    </button>`;
+}
+
+async function _toggleSara(numero){
+  const bloqueado = _saraStatus[numero] === 'bloqueado';
+  const action = bloqueado ? 'unblock' : 'block';
+  try{
+    const cfg = JSON.parse(localStorage.getItem('fp_evo_cfg')||'{}');
+    const r = await fetch(cfg.bridgeUrl+'/sara/'+action, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-secret': cfg.secret||'FleetPro2025'},
+      body: JSON.stringify({numero})
+    });
+    if(!r.ok) throw new Error('Erro '+r.status);
+    _saraStatus[numero] = bloqueado ? 'livre' : 'bloqueado';
+    const c = allClientes.find(x=>activeChatId===x.id);
+    _renderBtnSara(c?.telefone||numero);
+    notify(bloqueado?'SARA liberada!':'SARA pausada — atendimento manual','success');
+  }catch(e){
+    notify('Erro ao controlar SARA: '+e.message,'error');
+  }
+}
+
 // chat.js — Chat WhatsApp, SSE, usuários e investidores
 
 // ══ CONFIG ══
@@ -50,6 +90,8 @@ function conectarSSE(bridgeUrl, secret){
     try{
       const msg = JSON.parse(e.data);
       if(msg.tipo==='wpp_msg_recebida') receberMsgSSE(msg);
+      else if(msg.tipo==='sara_bloqueada')   _atualizarBotaoSara(msg.numero, true);
+      else if(msg.tipo==='sara_desbloqueada') _atualizarBotaoSara(msg.numero, false);
     }catch(_){}
   };
   sseSource.onerror = ()=>{
@@ -227,8 +269,9 @@ async function evoSendText(telefone, texto){
 
 // ── RENDER ──
 function renderMsgItem(m){
-  const out  = m.direcao==='saida' || m.out===true;
-  const tipo = m.tipo||'text';
+  const out    = m.direcao==='saida' || m.out===true;
+  const isSara = out && ((m.nomeCliente||'').includes('SARA') || (m.nomeCliente||'').includes('🤖'));
+  const tipo   = m.tipo||'text';
   const mediaUrl  = m.media_url||m.mediaUrl||m.media_url_local||null;
   const t    = m.created_at
     ? new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
@@ -264,7 +307,9 @@ function renderMsgItem(m){
     const txt = (m.texto||m.text||'').replace(/</g,'&lt;').replace(/\n/g,'<br>');
     corpo = '<div style="white-space:pre-wrap">'+txt+'</div>';
   }
-  return '<div class="msg '+(out?'msg-out':'msg-in')+'">'+corpo+'<div class="msg-time">'+t+'</div></div>';
+  const saraBadge = isSara ? '<div style="font-size:9px;color:#f0c040;font-weight:700;margin-bottom:3px;letter-spacing:.5px">🤖 SARA</div>' : '';
+  const bgSara = isSara ? 'background:rgba(240,192,64,.12);border:1px solid rgba(240,192,64,.2);' : '';
+  return '<div class="msg '+(out?'msg-out':'msg-in')+'" style="'+bgSara+'">'+saraBadge+corpo+'<div class="msg-time">'+t+'</div></div>';
 }
 
 async function renderChatMsgs(cid){
@@ -358,6 +403,8 @@ function abrirChat(cid){
   document.getElementById('chat-info').textContent = c.telefone ? '📱 '+c.telefone : 'Sem telefone';
   const btnCad = document.getElementById('btn-cadastrar-chat');
   if(btnCad) btnCad.style.display = 'none';
+  // Botão SARA
+  _renderBtnSara(c.telefone);
   renderChatMsgs(cid);
   renderChatContacts();
 }
@@ -592,6 +639,73 @@ async function enviarContratoWpp(){
 }
 
 // ── PERFIL CLIENTE — função em clientes.js ──
+
+// ── BLOQUEIO DA SARA ──
+const _saraBloqueadas = new Set(); // números bloqueados localmente
+
+function _atualizarBotaoSara(numero, bloqueada){
+  const numLimpo = (numero||'').replace(/\D/g,'').slice(-11);
+  if(bloqueada) _saraBloqueadas.add(numLimpo);
+  else _saraBloqueadas.delete(numLimpo);
+  // Atualiza botão se o chat desse número estiver aberto
+  const btn = document.getElementById('btn-sara-toggle');
+  if(!btn) return;
+  const ativo = activeChatId;
+  const c = allClientes.find(x=>x.id===ativo);
+  const telAtivo = (c?.telefone||activeChatId||'').replace(/\D/g,'').slice(-11);
+  if(telAtivo === numLimpo) _renderBotaoSara(bloqueada);
+}
+
+function _renderBotaoSara(bloqueada){
+  const btn = document.getElementById('btn-sara-toggle');
+  if(!btn) return;
+  if(bloqueada){
+    btn.textContent = '▶️ Liberar SARA';
+    btn.style.background = 'rgba(22,163,74,.15)';
+    btn.style.color = '#16a34a';
+    btn.style.borderColor = 'rgba(22,163,74,.3)';
+  } else {
+    btn.textContent = '🤖 Pausar SARA';
+    btn.style.background = 'rgba(139,92,246,.15)';
+    btn.style.color = '#8b5cf6';
+    btn.style.borderColor = 'rgba(139,92,246,.3)';
+  }
+}
+
+async function toggleSara(){
+  if(!activeChatId) return;
+  const c = allClientes.find(x=>x.id===activeChatId);
+  const telefone = c?.telefone || (activeChatId.includes('-') ? null : activeChatId);
+  if(!telefone){ notify('Cliente sem telefone','error'); return; }
+  const numLimpo = telefone.replace(/\D/g,'').slice(-11);
+  const bloqueada = _saraBloqueadas.has(numLimpo);
+  const cfg = JSON.parse(localStorage.getItem('fp_evo_cfg')||'{}');
+  const endpoint = bloqueada ? '/unblock-sara' : '/block-sara';
+  try{
+    const r = await fetch((cfg.bridgeUrl||'').replace(/\/$/,'')+endpoint, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-secret':'FleetPro2025'},
+      body: JSON.stringify({ numero: numLimpo })
+    });
+    const data = await r.json();
+    if(data.ok){
+      if(bloqueada){ _saraBloqueadas.delete(numLimpo); _renderBotaoSara(false); notify('SARA liberada!','success'); }
+      else { _saraBloqueadas.add(numLimpo); _renderBotaoSara(true); notify('SARA pausada — atendente assumiu!','success'); }
+    }
+  }catch(e){ notify('Erro: '+e.message,'error'); }
+}
+
+async function _checarStatusSara(telefone){
+  const numLimpo = (telefone||'').replace(/\D/g,'').slice(-11);
+  const cfg = JSON.parse(localStorage.getItem('fp_evo_cfg')||'{}');
+  try{
+    const r = await fetch((cfg.bridgeUrl||'').replace(/\/$/,'')+'/sara-status/'+numLimpo+'?secret=FleetPro2025');
+    const data = await r.json();
+    if(data.bloqueada) _saraBloqueadas.add(numLimpo);
+    else _saraBloqueadas.delete(numLimpo);
+    _renderBotaoSara(data.bloqueada);
+  }catch(_){}
+}
 
 // ── CADASTRAR CLIENTE PELO CHAT ──
 function abrirCadastroClienteChat(){
