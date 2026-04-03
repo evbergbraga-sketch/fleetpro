@@ -264,18 +264,15 @@ async function renderChatMsgs(cid){
   const area = document.getElementById('chat-msgs');
   if(!area) return;
   const memMsgs = chatMsgs[cid]||[];
-  // Mostra memória imediatamente se tiver
   if(memMsgs.length){
     area.innerHTML = memMsgs.map(renderMsgItem).join('');
     area.scrollTop = area.scrollHeight;
   }
-  // Busca banco SEMPRE — sem mostrar "Carregando" se já tem msgs na memória
   if(!memMsgs.length){
     area.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--muted2);padding:20px">⏳ Buscando mensagens...</div>';
   }
   try{
     const dbMsgs = await carregarMsgsDB(cid);
-    // Atualiza chatMsgs com dados do banco para próximas visitas
     if(dbMsgs.length > 0){
       if(!chatMsgs[cid]) chatMsgs[cid] = [];
       dbMsgs.forEach(m=>{
@@ -593,40 +590,7 @@ async function verPerfilCliente(){
   const c = allClientes.find(x=>x.id===activeChatId);
   if(!c){ notify('Cadastre o cliente para ver o perfil','error'); return; }
   await _renderPerfilCliente(c);
-  return;
-  const {data:locs} = await sb.from('locacoes')
-    .select('*,veiculos(marca,modelo,placa)')
-    .eq('cliente_id',c.id)
-    .order('created_at',{ascending:false});
-  const locsHtml = (locs||[]).length ? (locs||[]).map(l=>{
-    const dias = l.data_inicio&&l.data_fim ? Math.ceil((new Date(l.data_fim)-new Date(l.data_inicio))/86400000) : '?';
-    const badge = l.status==='ativa'?'<span class="badge badge-green">Ativa</span>':l.status==='encerrada'?'<span class="badge badge-blue">Encerrada</span>':'<span class="badge badge-red">Cancelada</span>';
-    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span style="font-weight:600;font-size:13px">🚗 ${l.veiculos?.marca||''} ${l.veiculos?.modelo||''} — ${l.veiculos?.placa||''}</span>${badge}
-      </div>
-      <div style="font-size:12px;color:var(--muted)">📅 ${fmtData(l.data_inicio)} a ${fmtData(l.data_fim)} · ${dias} dias</div>
-      <div style="font-size:12px;color:var(--muted)">💰 R$ ${(l.diaria||0).toFixed(2)}/dia · Total: R$ ${(l.total||0).toFixed(2)}</div>
-    </div>`;
-  }).join('') : '<div style="color:var(--muted2);font-size:13px;padding:8px 0">Nenhum contrato ainda.</div>';
-  body.innerHTML = `
-    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div><div style="font-size:11px;color:var(--muted2)">TELEFONE</div><div style="font-size:13px">${c.telefone||'—'}</div></div>
-      <div><div style="font-size:11px;color:var(--muted2)">CPF</div><div style="font-size:13px">${c.cpf||'—'}</div></div>
-      <div><div style="font-size:11px;color:var(--muted2)">EMAIL</div><div style="font-size:13px">${c.email||'—'}</div></div>
-      <div><div style="font-size:11px;color:var(--muted2)">CNH</div><div style="font-size:13px">${c.cnh||'—'}</div></div>
-      ${c.endereco?`<div style="grid-column:1/-1"><div style="font-size:11px;color:var(--muted2)">ENDEREÇO</div><div style="font-size:13px">${c.endereco}</div></div>`:''}
-    </div>
-    <div style="padding:16px 20px">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted2);margin-bottom:12px">HISTÓRICO DE LOCAÇÕES (${(locs||[]).length})</div>
-      ${locsHtml}
-    </div>
-    <div style="padding:0 20px 16px;display:flex;gap:8px">
-      <button class="btn btn-ghost" style="flex:1" onclick="editarCliente('${c.id}');closeModal('perfil-cliente')">✏️ Editar</button>
-      <button class="btn btn-primary" style="flex:1" onclick="closeModal('perfil-cliente')">💬 Fechar</button>
-    </div>`;
 }
-
 
 // ── CADASTRAR CLIENTE PELO CHAT ──
 function abrirCadastroClienteChat(){
@@ -644,56 +608,6 @@ function abrirCadastroClienteChat(){
 }
 
 function setMsg(t){ const i=document.getElementById('chat-msg-input'); if(i){i.value=t;i.focus();} }
-
-// ══ USUÁRIOS ══
-async function renderUsuarios(){
-  const {data} = await sb.from('perfis').select('*').order('created_at');
-  allPerfis = data||[];
-  document.getElementById('usuarios-list').innerHTML = allPerfis.map(u=>{
-    const isMe = u.id===currentUser?.id;
-    const rBadge = u.perfil==='admin'?'badge-yellow':u.perfil==='atendente'?'badge-blue':'badge-purple';
-    const ini = (u.nome||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-    return `<div class="user-card">
-      <div class="cavatar" style="width:42px;height:42px;font-size:14px;background:rgba(245,166,35,.12);color:var(--accent)">${ini}</div>
-      <div class="uc-info">
-        <div class="uc-name">${u.nome}${isMe?' <span style="font-size:10px;color:var(--muted)">(você)</span>':''}</div>
-        <div class="uc-email">${u.email}</div>
-      </div>
-      <div class="uc-actions" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        ${!isMe?`
-          <select onchange="alterarPerfil('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:6px;cursor:pointer">
-            <option value="atendente" ${u.perfil==='atendente'?'selected':''}>🧑‍💼 Atendente</option>
-            <option value="admin" ${u.perfil==='admin'?'selected':''}>👑 Admin</option>
-            <option value="investidor" ${u.perfil==='investidor'?'selected':''}>📈 Investidor</option>
-          </select>
-          <button onclick="excluirUsuario('${u.id}','${u.nome.replace(/'/g,"\\'")}','${u.email}')" style="font-size:11px;padding:5px 10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:6px;cursor:pointer">🗑️ Excluir</button>
-        `:`<span class="badge ${rBadge}">${ROLE_LABELS[u.perfil]}</span><span style="font-size:11px;color:var(--muted2)">seu perfil</span>`}
-      </div>
-    </div>`;
-  }).join('')||'<p style="color:var(--muted2)">Nenhum usuário encontrado.</p>';
-}
-
-async function alterarPerfil(uid, novoPerfil){
-  const {error} = await sb.from('perfis').update({perfil:novoPerfil}).eq('id',uid);
-  if(error){notify('Erro: '+error.message,'error');return;}
-  notify('Perfil atualizado!','success'); renderUsuarios();
-}
-
-async function excluirUsuario(uid, nome, email){
-  if(!confirm(`Excluir o usuário "${nome}" (${email})?
-
-Essa ação não pode ser desfeita.`)) return;
-  try{
-    // Remove da tabela perfis
-    const {error} = await sb.from('perfis').delete().eq('id',uid);
-    if(error) throw error;
-    notify(`Usuário ${nome} removido do sistema.`,'success');
-    renderUsuarios();
-  }catch(e){
-    notify('Erro ao excluir: '+e.message,'error');
-  }
-}
-
 
 // Reconexão ao voltar para a aba
 document.addEventListener('visibilitychange', ()=>{
