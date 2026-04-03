@@ -387,18 +387,20 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
       <div class="inv-stat-label">Capital investido</div>
       <div class="inv-stat-val">R$ ${investimento.toLocaleString('pt-BR')}</div>
       <div class="inv-stat-sub">${qtdMotos} moto${qtdMotos!==1?'s':''} × R$ ${VALOR_MOTO.toLocaleString('pt-BR')}</div>
+      ${qtdEmPrepAtiva>0?`<div style="font-size:9px;color:#f0c040;margin-top:4px">⚙️ ${qtdEmPrepAtiva} em preparação (30d)</div>`:''}
     </div>
     <div class="inv-stat">
       <span class="inv-stat-icon">💰</span>
       <div class="inv-stat-label">Rendimento mensal</div>
       <div class="inv-stat-val">R$ ${rendMensal.toLocaleString('pt-BR')}</div>
-      <div class="inv-stat-sub">${qtdAtivos} moto${qtdAtivos!==1?"s":""} × R$ ${RENDIMENTO_MES}/mês${qtdEmPrepAtiva>0?" · "+qtdEmPrepAtiva+" em prep.":""}</div>
+      <div class="inv-stat-sub">${qtdAtivos} moto${qtdAtivos!==1?'s':''} ativas × R$ ${RENDIMENTO_MES}/mês</div>
+      ${qtdEmPrepAtiva>0?`<div style="font-size:9px;color:#f0c040;margin-top:4px">⏳ +R$ ${(qtdEmPrepAtiva*RENDIMENTO_MES).toLocaleString('pt-BR')}/mês após 30d</div>`:''}
     </div>
     <div class="inv-stat">
       <span class="inv-stat-icon">📅</span>
       <div class="inv-stat-label">Rendimento anual</div>
       <div class="inv-stat-val">R$ ${rendAnual.toLocaleString('pt-BR')}</div>
-      <div class="inv-stat-sub">R$ ${rendMensal.toLocaleString('pt-BR')}/mês × 12</div>
+      <div class="inv-stat-sub">${qtdEmPrepAtiva>0?`R$ ${((qtdAtivos+qtdEmPrepAtiva)*RENDIMENTO_MES).toLocaleString('pt-BR')}/mês após 30d × 12`:`R$ ${rendMensal.toLocaleString('pt-BR')}/mês × 12`}</div>
     </div>
     <div class="inv-stat">
       <span class="inv-stat-icon">📈</span>
