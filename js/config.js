@@ -51,3 +51,41 @@ const ROLE_MENUS = {
 };
 const ROLE_LABELS = {admin:'Administrador', atendente:'Atendente', investidor:'Investidor'};
 // ══ LAYERS ══
+
+// ══ CPF — VALIDAÇÃO E MÁSCARA ══
+function validarCPF(cpf){
+  cpf = cpf.replace(/\D/g,'');
+  if(cpf.length !== 11) return false;
+  if(/^(\d){10}$/.test(cpf)) return false; // todos iguais ex: 111.111.111-11
+  let s = 0;
+  for(let i=0;i<9;i++) s += parseInt(cpf[i])*(10-i);
+  let r = (s*10)%11; if(r===10||r===11) r=0;
+  if(r !== parseInt(cpf[9])) return false;
+  s = 0;
+  for(let i=0;i<10;i++) s += parseInt(cpf[i])*(11-i);
+  r = (s*10)%11; if(r===10||r===11) r=0;
+  return r === parseInt(cpf[10]);
+}
+
+function maskCPF(input){
+  let v = input.value.replace(/\D/g,'').slice(0,11);
+  if(v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');
+  else if(v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
+  else if(v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
+  input.value = v;
+  // Feedback visual
+  const raw = v.replace(/\D/g,'');
+  if(raw.length===11){
+    input.style.borderColor = validarCPF(raw) ? '#16a34a' : '#dc2626';
+  } else {
+    input.style.borderColor = '';
+  }
+}
+
+function checarCPF(valor, campo='CPF'){
+  const raw = valor.replace(/\D/g,'');
+  if(!raw) return true; // campo opcional vazio OK
+  if(raw.length !== 11){ notify(campo+' deve ter 11 dígitos','error'); return false; }
+  if(!validarCPF(raw)){ notify(campo+' inválido','error'); return false; }
+  return true;
+}
