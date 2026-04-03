@@ -57,8 +57,27 @@ function editarVeiculo(id){
   document.getElementById('ev-cambio').value= v.cambio||'Automatico';
   document.getElementById('ev-km').value    = v.km_atual||0;
   document.getElementById('ev-diaria').value= v.diaria||'';
-  document.getElementById('ev-status').value= v.status||'disponivel';
-  document.getElementById('ev-data-entrada').value= v.data_entrada||'';
+  document.getElementById('ev-status').value      = v.status||'disponivel';
+  document.getElementById('ev-data-entrada').value  = v.data_entrada||'';
+  document.getElementById('ev-chassi').value         = v.chassi||'';
+  document.getElementById('ev-renavam').value        = v.renavam||'';
+  document.getElementById('ev-estado').value         = v.estado||'';
+  document.getElementById('ev-hodometro-entrada').value = v.hodometro_entrada||'';
+  document.getElementById('ev-local-entrega').value  = v.local_entrega||'';
+  document.getElementById('ev-data-entrega').value   = v.data_entrega||'';
+  document.getElementById('ev-proprietario-nome').value = v.proprietario_nome||'';
+  document.getElementById('ev-cpf-cnpj-prop').value  = v.cpf_cnpj_proprietario||'';
+  document.getElementById('ev-data-compra').value    = v.data_compra||'';
+  document.getElementById('ev-valor-compra').value   = v.valor_compra||'';
+  document.getElementById('ev-nf-compra').value      = v.nf_compra||'';
+  document.getElementById('ev-fornecedor').value     = v.fornecedor||'';
+  document.getElementById('ev-ipva25-val').value     = v.ipva_2025_valor||'';
+  document.getElementById('ev-ipva25-venc').value    = v.ipva_2025_vencimento||'';
+  document.getElementById('ev-ipva26-val').value     = v.ipva_2026_valor||'';
+  document.getElementById('ev-ipva26-venc').value    = v.ipva_2026_vencimento||'';
+  document.getElementById('ev-ultima-revisao').value = v.ultima_revisao||'';
+  document.getElementById('ev-proxima-revisao').value= v.proxima_revisao||'';
+  document.getElementById('ev-produtos').value       = v.produtos||'';
   document.getElementById('ev-obs').value   = v.observacoes||'';
   preencherSelectInvestidores('ev-investidor').then(()=>{
     const sel = document.getElementById('ev-investidor');
@@ -80,8 +99,27 @@ async function atualizarVeiculo(){
     cambio:       document.getElementById('ev-cambio').value,
     km_atual:     parseInt(document.getElementById('ev-km').value)||0,
     diaria:       parseFloat(document.getElementById('ev-diaria').value)||0,
-    status:       document.getElementById('ev-status').value,
-    data_entrada: document.getElementById('ev-data-entrada').value||null,
+    status:              document.getElementById('ev-status').value,
+    data_entrada:        document.getElementById('ev-data-entrada').value||null,
+    chassi:              document.getElementById('ev-chassi').value.trim()||null,
+    renavam:             document.getElementById('ev-renavam').value.trim()||null,
+    estado:              document.getElementById('ev-estado').value||null,
+    hodometro_entrada:   parseInt(document.getElementById('ev-hodometro-entrada').value)||null,
+    local_entrega:       document.getElementById('ev-local-entrega').value.trim()||null,
+    data_entrega:        document.getElementById('ev-data-entrega').value||null,
+    proprietario_nome:   document.getElementById('ev-proprietario-nome').value.trim()||null,
+    cpf_cnpj_proprietario: document.getElementById('ev-cpf-cnpj-prop').value.trim()||null,
+    data_compra:         document.getElementById('ev-data-compra').value||null,
+    valor_compra:        parseFloat(document.getElementById('ev-valor-compra').value)||null,
+    nf_compra:           document.getElementById('ev-nf-compra').value.trim()||null,
+    fornecedor:          document.getElementById('ev-fornecedor').value.trim()||null,
+    ipva_2025_valor:     parseFloat(document.getElementById('ev-ipva25-val').value)||null,
+    ipva_2025_vencimento:document.getElementById('ev-ipva25-venc').value||null,
+    ipva_2026_valor:     parseFloat(document.getElementById('ev-ipva26-val').value)||null,
+    ipva_2026_vencimento:document.getElementById('ev-ipva26-venc').value||null,
+    ultima_revisao:      document.getElementById('ev-ultima-revisao').value||null,
+    proxima_revisao:     document.getElementById('ev-proxima-revisao').value||null,
+    produtos:            document.getElementById('ev-produtos').value.trim()||null,
     observacoes:  document.getElementById('ev-obs').value.trim(),
     investidor_id:document.getElementById('ev-investidor')?.value||null,
   };
