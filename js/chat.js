@@ -613,15 +613,15 @@ async function enviarContratoWpp(){
 const _saraBloqueadas = new Set(); // números bloqueados localmente
 
 function _atualizarBotaoSara(numero, bloqueada){
-  const numLimpo = (numero||'').replace(/\D/g,'').slice(-11);
+  const rawN = (numero||'').replace(/\D/g,'');
+  const numLimpo = rawN.startsWith('55') ? rawN : '55' + rawN.slice(-11);
   if(bloqueada) _saraBloqueadas.add(numLimpo);
   else _saraBloqueadas.delete(numLimpo);
-  // Atualiza botão se o chat desse número estiver aberto
   const btn = document.getElementById('btn-sara-toggle');
   if(!btn) return;
-  const ativo = activeChatId;
-  const c = allClientes.find(x=>x.id===ativo);
-  const telAtivo = (c?.telefone||activeChatId||'').replace(/\D/g,'').slice(-11);
+  const c = allClientes.find(x=>x.id===activeChatId);
+  const telRaw = (c?.telefone||activeChatId||'').replace(/\D/g,'');
+  const telAtivo = telRaw.startsWith('55') ? telRaw : '55' + telRaw.slice(-11);
   if(telAtivo === numLimpo) _renderBotaoSara(bloqueada);
 }
 
@@ -647,7 +647,8 @@ async function toggleSara(){
   // Usa telefone do cliente, ou o próprio activeChatId se for número (desconhecido)
   const telefone = c?.telefone || (!activeChatId.includes('-') ? activeChatId : null);
   if(!telefone){ notify('Não foi possível identificar o número','error'); return; }
-  const numLimpo = telefone.replace(/\D/g,'').slice(-11);
+  const raw = telefone.replace(/\D/g,'');
+  const numLimpo = raw.startsWith('55') ? raw : '55' + raw.slice(-11);
   const bloqueada = _saraBloqueadas.has(numLimpo);
   const cfg = JSON.parse(localStorage.getItem('fp_evo_cfg')||'{}');
   const endpoint = bloqueada ? '/unblock-sara' : '/block-sara';
@@ -666,16 +667,18 @@ async function toggleSara(){
 }
 
 async function _checarStatusSara(telefone){
-  const numLimpo = (String(telefone)||'').replace(/\D/g,'').slice(-11);
-  if(!numLimpo){ document.getElementById('btn-sara-toggle') && _renderBotaoSara(false); return; }
+  const raw = (String(telefone)||'').replace(/\D/g,'');
+  if(!raw){ _renderBotaoSara(false); return; }
+  // Usa número completo com 55 — mesmo formato do Redis
+  const numChave = raw.startsWith('55') ? raw : '55' + raw.slice(-11);
   const cfg = JSON.parse(localStorage.getItem('fp_evo_cfg')||'{}');
   try{
-    const r = await fetch((cfg.bridgeUrl||'').replace(/\/$/,'')+'/sara-status/'+numLimpo+'?secret=FleetPro2025');
+    const r = await fetch((cfg.bridgeUrl||'https://bridge.ruahsystems.com.br').replace(/\/$/,'')+'/sara-status/'+numChave+'?secret=FleetPro2025');
     const data = await r.json();
-    if(data.bloqueada) _saraBloqueadas.add(numLimpo);
-    else _saraBloqueadas.delete(numLimpo);
+    if(data.bloqueada) _saraBloqueadas.add(numChave);
+    else _saraBloqueadas.delete(numChave);
     _renderBotaoSara(data.bloqueada);
-  }catch(_){}
+  }catch(_){ _renderBotaoSara(false); }
 }
 
 // ── CADASTRAR CLIENTE PELO CHAT ──
