@@ -969,19 +969,92 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
 
 <!-- MODAL CADASTRAR VEÍCULO -->
 <div class="modal-overlay" id="m-veiculo">
-  <div class="modal">
+  <div class="modal" style="max-width:700px">
     <div class="modal-header"><div class="modal-title" id="mv-title">Cadastrar Veículo</div><button class="modal-close" onclick="closeModal('veiculo')">✕</button></div>
-    <div class="form-grid">
-      <div class="form-group"><label>Tipo</label><select id="mv-tipo" style="width:100%"><option value="carro">🚗 Carro</option><option value="moto">🏍️ Moto</option></select></div>
-      <div class="form-group"><label>Marca</label><input type="text" id="mv-marca" placeholder="Honda" style="width:100%"></div>
-      <div class="form-group"><label>Modelo</label><input type="text" id="mv-modelo" placeholder="Civic" style="width:100%"></div>
-      <div class="form-group"><label>Placa</label><input type="text" id="mv-placa" placeholder="ABC-1234" style="width:100%"></div>
-      <div class="form-group"><label>Ano</label><input type="number" id="mv-ano" placeholder="2023" style="width:100%"></div>
-      <div class="form-group"><label>Cor</label><input type="text" id="mv-cor" placeholder="Prata" style="width:100%"></div>
-      <div class="form-group"><label>Câmbio</label><select id="mv-cambio" style="width:100%"><option value="Automatico">Automático</option><option value="Manual">Manual</option></select></div>
-      <div class="form-group"><label>Km atual</label><input type="number" id="mv-km" placeholder="0" style="width:100%"></div>
-      <div class="form-group full"><label>Diária (R$)</label><input type="number" id="mv-diaria" placeholder="150" style="width:100%"></div>
-      <div class="form-group full"><label>Observações</label><textarea id="mv-obs" rows="2" style="width:100%;resize:none"></textarea></div>
+    <div style="max-height:75vh;overflow-y:auto;padding:16px 20px">
+
+      <div class="form-section-title">🚗 Identificação</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Tipo</label><select id="mv-tipo" style="width:100%"><option value="carro">🚗 Carro</option><option value="moto">🏍️ Moto</option></select></div>
+        <div class="form-group"><label>Marca</label><input type="text" id="mv-marca" placeholder="Honda" style="width:100%"></div>
+        <div class="form-group"><label>Modelo</label><input type="text" id="mv-modelo" placeholder="Civic" style="width:100%"></div>
+        <div class="form-group"><label>Placa</label><input type="text" id="mv-placa" placeholder="ABC-1234" style="width:100%"></div>
+        <div class="form-group"><label>Ano Fab./Modelo</label><input type="text" id="mv-ano" placeholder="2024/2025" style="width:100%"></div>
+        <div class="form-group"><label>Cor</label><input type="text" id="mv-cor" placeholder="Prata" style="width:100%"></div>
+        <div class="form-group"><label>Câmbio</label><select id="mv-cambio" style="width:100%"><option value="Automatico">Automático</option><option value="Manual">Manual</option></select></div>
+        <div class="form-group"><label>Km atual</label><input type="number" id="mv-km" placeholder="0" style="width:100%"></div>
+        <div class="form-group"><label>Diária (R$)</label><input type="number" id="mv-diaria" placeholder="150" style="width:100%"></div>
+        <div class="form-group"><label>Status</label>
+          <select id="mv-status" style="width:100%">
+            <option value="disponivel">✅ Disponível</option>
+            <option value="preparacao">⚙️ Em preparação</option>
+            <option value="reservado">🗓️ Reservado</option>
+            <option value="alugado">🔴 Alugado</option>
+            <option value="manutencao">🔧 Manutenção</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>📈 Investidor (proprietário)</label><select id="mv-investidor" style="width:100%"><option value="">— Nenhum (frota própria)</option></select></div>
+      </div>
+
+      <!-- IDENTIFICAÇÃO EXTRA -->
+      <div class="form-section-title">🔖 Documentação</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Chassi</label><input type="text" id="mv-chassi" style="width:100%"></div>
+        <div class="form-group"><label>Renavam</label><input type="text" id="mv-renavam" style="width:100%"></div>
+        <div class="form-group"><label>Estado</label>
+          <select id="mv-estado" style="width:100%">
+            <option value="">— UF</option>
+            <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option>
+            <option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option>
+            <option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option>
+            <option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
+            <option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option>
+            <option>SP</option><option>TO</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Proprietário</label><input type="text" id="mv-proprietario-nome" style="width:100%"></div>
+        <div class="form-group"><label>CPF/CNPJ proprietário</label><input type="text" id="mv-cpf-cnpj-prop" style="width:100%"></div>
+      </div>
+
+      <!-- COMPRA -->
+      <div class="form-section-title">🛒 Dados de compra</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Data de compra</label><input type="date" id="mv-data-compra" style="width:100%"></div>
+        <div class="form-group"><label>Valor de compra (R$)</label><input type="number" id="mv-valor-compra" step="0.01" style="width:100%"></div>
+        <div class="form-group"><label>Nº NF da compra</label><input type="text" id="mv-nf-compra" style="width:100%"></div>
+        <div class="form-group"><label>Fornecedor</label><input type="text" id="mv-fornecedor" style="width:100%"></div>
+      </div>
+
+      <!-- ENTREGA -->
+      <div class="form-section-title">📍 Entrega / Pátio</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Hodômetro de entrada</label><input type="number" id="mv-hodometro-entrada" style="width:100%"></div>
+        <div class="form-group"><label>Local de entrega/pátio</label><input type="text" id="mv-local-entrega" style="width:100%"></div>
+        <div class="form-group"><label>Data de entrada</label><input type="date" id="mv-data-entrada" style="width:100%"></div>
+        <div class="form-group"><label>Data de entrega/pátio</label><input type="date" id="mv-data-entrega" style="width:100%"></div>
+      </div>
+
+      <!-- IPVA DINÂMICO -->
+      <div class="form-section-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>📋 IPVA</span>
+        <button type="button" onclick="_addIpva('mv')" style="font-size:11px;padding:4px 10px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer">+ Ano</button>
+      </div>
+      <div id="mv-ipvas" style="margin-bottom:8px"></div>
+
+      <!-- MANUTENÇÕES DINÂMICAS -->
+      <div class="form-section-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>🔧 Manutenções / Revisões</span>
+        <button type="button" onclick="_addManutencao('mv')" style="font-size:11px;padding:4px 10px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer">+ Adicionar</button>
+      </div>
+      <div id="mv-manutencoes" style="margin-bottom:8px"></div>
+
+      <!-- EXTRAS -->
+      <div class="form-section-title">📝 Extras</div>
+      <div class="form-grid">
+        <div class="form-group full"><label>Produtos instalados</label><textarea id="mv-produtos" rows="2" placeholder="Ex: Baú, GPS, Rastreador..." style="width:100%;resize:vertical"></textarea></div>
+      </div>
+      <div class="form-section-title">💬 Observações</div>
+      <div class="form-group full"><textarea id="mv-obs" rows="2" style="width:100%;resize:vertical"></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('veiculo')">Cancelar</button><button class="btn btn-primary" onclick="salvarVeiculo()">✓ Salvar</button></div>
   </div>
@@ -1087,19 +1160,19 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
         <div class="form-group"><label>Fornecedor</label><input type="text" id="ev-fornecedor" style="width:100%"></div>
       </div>
 
-      <div class="form-section-title">📋 IPVA</div>
-      <div class="form-grid">
-        <div class="form-group"><label>IPVA 2025 — Valor (R$)</label><input type="number" id="ev-ipva25-val" step="0.01" style="width:100%"></div>
-        <div class="form-group"><label>IPVA 2025 — Vencimento</label><input type="date" id="ev-ipva25-venc" style="width:100%"></div>
-        <div class="form-group"><label>IPVA 2026 — Valor (R$)</label><input type="number" id="ev-ipva26-val" step="0.01" style="width:100%"></div>
-        <div class="form-group"><label>IPVA 2026 — Vencimento</label><input type="date" id="ev-ipva26-venc" style="width:100%"></div>
+      <!-- IPVA DINÂMICO -->
+      <div class="form-section-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>📋 IPVA</span>
+        <button type="button" onclick="_addIpva('ev')" style="font-size:11px;padding:4px 10px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer">+ Ano</button>
       </div>
+      <div id="ev-ipvas" style="margin-bottom:8px"></div>
 
-      <div class="form-section-title">🔧 Manutenção / Revisão</div>
-      <div class="form-grid">
-        <div class="form-group"><label>Última revisão</label><input type="date" id="ev-ultima-revisao" style="width:100%"></div>
-        <div class="form-group"><label>Próxima revisão</label><input type="date" id="ev-proxima-revisao" style="width:100%"></div>
+      <!-- MANUTENÇÕES DINÂMICAS -->
+      <div class="form-section-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>🔧 Manutenções / Revisões</span>
+        <button type="button" onclick="_addManutencao('ev')" style="font-size:11px;padding:4px 10px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer">+ Adicionar</button>
       </div>
+      <div id="ev-manutencoes" style="margin-bottom:8px"></div>
 
       <div class="form-section-title">📝 Extras</div>
       <div class="form-grid">
