@@ -1024,31 +1024,88 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
 
 <!-- MODAL EDITAR VEÍCULO -->
 <div class="modal-overlay" id="m-editar-veiculo">
-  <div class="modal">
+  <div class="modal" style="max-width:700px">
     <div class="modal-header"><div class="modal-title">✏️ Editar Veículo</div><button class="modal-close" onclick="closeModal('editar-veiculo')">✕</button></div>
-    <input type="hidden" id="ev-id">
-    <div class="form-grid">
-      <div class="form-group"><label>Tipo</label><select id="ev-tipo" style="width:100%"><option value="carro">🚗 Carro</option><option value="moto">🏍️ Moto</option></select></div>
-      <div class="form-group"><label>Marca</label><input type="text" id="ev-marca" style="width:100%"></div>
-      <div class="form-group"><label>Modelo</label><input type="text" id="ev-modelo" style="width:100%"></div>
-      <div class="form-group"><label>Placa</label><input type="text" id="ev-placa" style="width:100%"></div>
-      <div class="form-group"><label>Ano</label><input type="number" id="ev-ano" style="width:100%"></div>
-      <div class="form-group"><label>Cor</label><input type="text" id="ev-cor" style="width:100%"></div>
-      <div class="form-group"><label>Câmbio</label><select id="ev-cambio" style="width:100%"><option value="Automatico">Automático</option><option value="Manual">Manual</option></select></div>
-      <div class="form-group"><label>Km atual</label><input type="number" id="ev-km" style="width:100%"></div>
-      <div class="form-group"><label>Diária (R$)</label><input type="number" id="ev-diaria" style="width:100%"></div>
-      <div class="form-group"><label>Status</label>
-        <select id="ev-status" style="width:100%">
-          <option value="disponivel">✅ Disponível</option>
-          <option value="preparacao">⚙️ Em preparação</option>
-          <option value="reservado">🗓️ Reservado</option>
-          <option value="alugado">🔴 Alugado</option>
-          <option value="manutencao">🔧 Manutenção</option>
-        </select>
+    <div style="max-height:75vh;overflow-y:auto;padding:16px 20px">
+      <input type="hidden" id="ev-id">
+
+      <div class="form-section-title">🚗 Identificação</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Tipo</label><select id="ev-tipo" style="width:100%"><option value="carro">🚗 Carro</option><option value="moto">🏍️ Moto</option></select></div>
+        <div class="form-group"><label>Marca</label><input type="text" id="ev-marca" style="width:100%"></div>
+        <div class="form-group"><label>Modelo</label><input type="text" id="ev-modelo" style="width:100%"></div>
+        <div class="form-group"><label>Placa</label><input type="text" id="ev-placa" style="width:100%"></div>
+        <div class="form-group"><label>Ano Fab./Modelo</label><input type="text" id="ev-ano" placeholder="2024/2025" style="width:100%"></div>
+        <div class="form-group"><label>Cor</label><input type="text" id="ev-cor" style="width:100%"></div>
+        <div class="form-group"><label>Chassi</label><input type="text" id="ev-chassi" style="width:100%"></div>
+        <div class="form-group"><label>Renavam</label><input type="text" id="ev-renavam" style="width:100%"></div>
+        <div class="form-group"><label>Estado</label>
+          <select id="ev-estado" style="width:100%">
+            <option value="">— Selecione</option>
+            <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option>
+            <option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option>
+            <option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option>
+            <option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
+            <option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option>
+            <option>SP</option><option>TO</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Câmbio</label><select id="ev-cambio" style="width:100%"><option value="Automatico">Automático</option><option value="Manual">Manual</option></select></div>
       </div>
-      <div class="form-group"><label>📅 Data de entrada</label><input type="date" id="ev-data-entrada" style="width:100%"></div>
-      <div class="form-group full"><label>📈 Investidor (proprietário)</label><select id="ev-investidor" style="width:100%"><option value="">— Nenhum (frota própria)</option></select></div>
-      <div class="form-group full"><label>Observações</label><textarea id="ev-obs" rows="2" style="width:100%;resize:none"></textarea></div>
+
+      <div class="form-section-title">⚙️ Operacional</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Status</label>
+          <select id="ev-status" style="width:100%">
+            <option value="disponivel">✅ Disponível</option>
+            <option value="preparacao">⚙️ Em preparação</option>
+            <option value="reservado">🗓️ Reservado</option>
+            <option value="alugado">🔴 Alugado</option>
+            <option value="manutencao">🔧 Manutenção</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Diária (R$)</label><input type="number" id="ev-diaria" style="width:100%"></div>
+        <div class="form-group"><label>Km atual</label><input type="number" id="ev-km" style="width:100%"></div>
+        <div class="form-group"><label>Hodômetro de entrada</label><input type="number" id="ev-hodometro-entrada" style="width:100%"></div>
+        <div class="form-group"><label>Data de entrada</label><input type="date" id="ev-data-entrada" style="width:100%"></div>
+        <div class="form-group"><label>Local de entrega/pátio</label><input type="text" id="ev-local-entrega" style="width:100%"></div>
+        <div class="form-group"><label>Data de entrega/pátio</label><input type="date" id="ev-data-entrega" style="width:100%"></div>
+        <div class="form-group full"><label>📈 Investidor (proprietário)</label><select id="ev-investidor" style="width:100%"><option value="">— Nenhum (frota própria)</option></select></div>
+      </div>
+
+      <div class="form-section-title">👤 Proprietário</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Nome do proprietário</label><input type="text" id="ev-proprietario-nome" style="width:100%"></div>
+        <div class="form-group"><label>CPF/CNPJ do proprietário</label><input type="text" id="ev-cpf-cnpj-prop" style="width:100%"></div>
+      </div>
+
+      <div class="form-section-title">🛒 Dados de compra</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Data de compra</label><input type="date" id="ev-data-compra" style="width:100%"></div>
+        <div class="form-group"><label>Valor de compra (R$)</label><input type="number" id="ev-valor-compra" step="0.01" style="width:100%"></div>
+        <div class="form-group"><label>Nº NF da compra</label><input type="text" id="ev-nf-compra" style="width:100%"></div>
+        <div class="form-group"><label>Fornecedor</label><input type="text" id="ev-fornecedor" style="width:100%"></div>
+      </div>
+
+      <div class="form-section-title">📋 IPVA</div>
+      <div class="form-grid">
+        <div class="form-group"><label>IPVA 2025 — Valor (R$)</label><input type="number" id="ev-ipva25-val" step="0.01" style="width:100%"></div>
+        <div class="form-group"><label>IPVA 2025 — Vencimento</label><input type="date" id="ev-ipva25-venc" style="width:100%"></div>
+        <div class="form-group"><label>IPVA 2026 — Valor (R$)</label><input type="number" id="ev-ipva26-val" step="0.01" style="width:100%"></div>
+        <div class="form-group"><label>IPVA 2026 — Vencimento</label><input type="date" id="ev-ipva26-venc" style="width:100%"></div>
+      </div>
+
+      <div class="form-section-title">🔧 Manutenção / Revisão</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Última revisão</label><input type="date" id="ev-ultima-revisao" style="width:100%"></div>
+        <div class="form-group"><label>Próxima revisão</label><input type="date" id="ev-proxima-revisao" style="width:100%"></div>
+      </div>
+
+      <div class="form-section-title">📝 Extras</div>
+      <div class="form-grid">
+        <div class="form-group full"><label>Produtos instalados</label><textarea id="ev-produtos" rows="2" placeholder="Ex: Baú, GPS, Rastreador..." style="width:100%;resize:vertical"></textarea></div>
+        <div class="form-group full"><label>Observações</label><textarea id="ev-obs" rows="2" style="width:100%;resize:none"></textarea></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('editar-veiculo')">Cancelar</button>
