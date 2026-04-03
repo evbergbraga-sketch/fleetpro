@@ -89,3 +89,49 @@ function checarCPF(valor, campo='CPF'){
   if(!validarCPF(raw)){ notify(campo+' inválido','error'); return false; }
   return true;
 }
+
+function validarCNPJ(cnpj){
+  cnpj = cnpj.replace(/\D/g,'');
+  if(cnpj.length !== 14) return false;
+  if(/^(\d){13}$/.test(cnpj)) return false;
+  let t = cnpj.length - 2, d = cnpj.substring(t), n = cnpj.substring(0,t);
+  let s = 0, p = t - 7, c = t;
+  for(let i=t;i>=1;i--){ s += parseInt(n.charAt(t-i)) * c--; if(c<2) c=9; }
+  let r = s%11<2?0:11-s%11;
+  if(r !== parseInt(d.charAt(0))) return false;
+  t++; n = cnpj.substring(0,t); s=0; p=t-7; c=t;
+  for(let i=t;i>=1;i--){ s += parseInt(n.charAt(t-i)) * c--; if(c<2) c=9; }
+  r = s%11<2?0:11-s%11;
+  return r === parseInt(d.charAt(1));
+}
+
+function maskCpfCnpj(input){
+  let v = input.value.replace(/\D/g,'').slice(0,14);
+  if(v.length <= 11){
+    // Máscara CPF
+    if(v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');
+    else if(v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
+    else if(v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
+  } else {
+    // Máscara CNPJ
+    v = v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/,'$1.$2.$3/$4-$5');
+  }
+  input.value = v;
+  const raw = v.replace(/\D/g,'');
+  if(raw.length===11) input.style.borderColor = validarCPF(raw)?'#16a34a':'#dc2626';
+  else if(raw.length===14) input.style.borderColor = validarCNPJ(raw)?'#16a34a':'#dc2626';
+  else input.style.borderColor = '';
+}
+
+function checarCpfCnpj(valor, campo='CPF/CNPJ'){
+  const raw = valor.replace(/\D/g,'');
+  if(!raw) return true;
+  if(raw.length===11){
+    if(!validarCPF(raw)){ notify(campo+' inválido','error'); return false; }
+  } else if(raw.length===14){
+    if(!validarCNPJ(raw)){ notify(campo+' inválido','error'); return false; }
+  } else {
+    notify(campo+' deve ter 11 (CPF) ou 14 (CNPJ) dígitos','error'); return false;
+  }
+  return true;
+}
