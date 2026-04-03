@@ -1013,7 +1013,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
           </select>
         </div>
         <div class="form-group"><label>Proprietário</label><input type="text" id="mv-proprietario-nome" style="width:100%"></div>
-        <div class="form-group"><label>CPF/CNPJ proprietário</label><input type="text" id="mv-cpf-cnpj-prop" style="width:100%" placeholder="CPF ou CNPJ"></div>
+        <div class="form-group"><label>CPF/CNPJ proprietário</label><input type="text" id="mv-cpf-cnpj-prop" style="width:100%" placeholder="CPF ou CNPJ" oninput="if(typeof maskCpfCnpj==='function')maskCpfCnpj(this)"></div>
       </div>
 
       <!-- COMPRA -->
@@ -1149,7 +1149,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
       <div class="form-section-title">👤 Proprietário</div>
       <div class="form-grid">
         <div class="form-group"><label>Nome do proprietário</label><input type="text" id="ev-proprietario-nome" style="width:100%"></div>
-        <div class="form-group"><label>CPF/CNPJ do proprietário</label><input type="text" id="ev-cpf-cnpj-prop" style="width:100%" placeholder="CPF ou CNPJ"></div>
+        <div class="form-group"><label>CPF/CNPJ do proprietário</label><input type="text" id="ev-cpf-cnpj-prop" style="width:100%" placeholder="CPF ou CNPJ" oninput="if(typeof maskCpfCnpj==='function')maskCpfCnpj(this)"></div>
       </div>
 
       <div class="form-section-title">🛒 Dados de compra</div>
