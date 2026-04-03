@@ -280,12 +280,12 @@ function _renderFormChecklist(tipo, locId, loc){
 
     <!-- FOTOS -->
     <div style="margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-bottom:8px">📷 Fotos (máx. 10)</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-bottom:8px">📷 Fotos (máx. 20)</div>
       <label style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--bg2);border:2px dashed var(--border2);border-radius:10px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
         <span style="font-size:20px">📷</span>
         <div>
           <div style="font-size:13px;font-weight:500">Selecionar fotos</div>
-          <div style="font-size:11px;color:var(--muted)">Até 10 fotos — JPG, PNG, WEBP</div>
+          <div style="font-size:11px;color:var(--muted)">Até 20 fotos — JPG, PNG, WEBP</div>
         </div>
         <input type="file" accept="image/*" multiple style="display:none" onchange="_previewFotos(this,'${tipo}')">
       </label>
@@ -335,13 +335,13 @@ function _renderItensNosFormularios(){
           <div style="background:var(--bg2);border-radius:8px;padding:8px 10px">
             <div style="font-size:12px;font-weight:500;margin-bottom:6px">${it.descricao}</div>
             <div style="display:flex;gap:4px">
-              <label style="flex:1;text-align:center;padding:4px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;border:1.5px solid #16a34a;color:#16a34a;background:transparent;transition:all .1s" onclick="_selectItem(this,'ok')">
+              <label style="flex:1;text-align:center;padding:5px 2px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;border:2px solid #16a34a;color:#16a34a;background:#fff;transition:all .15s" onclick="_selectItem(this,'ok')">
                 <input type="radio" name="chk-${tipo}-${it.id}" value="ok" style="display:none"> ✓ OK
               </label>
-              <label style="flex:1;text-align:center;padding:4px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;border:1.5px solid #dc2626;color:#dc2626;background:transparent;transition:all .1s" onclick="_selectItem(this,'avaria')">
+              <label style="flex:1;text-align:center;padding:5px 2px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;border:2px solid #dc2626;color:#dc2626;background:#fff;transition:all .15s" onclick="_selectItem(this,'avaria')">
                 <input type="radio" name="chk-${tipo}-${it.id}" value="avaria" style="display:none"> ✕ Avaria
               </label>
-              <label style="flex:1;text-align:center;padding:4px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;border:1.5px solid var(--muted2);color:var(--muted);background:transparent;transition:all .1s selected-nv" onclick="_selectItem(this,'nao_verificado')">
+              <label style="flex:1;text-align:center;padding:5px 2px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;border:2px solid #94a3b8;color:#64748b;background:#fff;transition:all .15s" onclick="_selectItem(this,'nao_verificado')">
                 <input type="radio" name="chk-${tipo}-${it.id}" value="nao_verificado" style="display:none"> — N/V
               </label>
             </div>
@@ -356,20 +356,30 @@ function _renderItensNosFormularios(){
 function _selectItem(label, status){
   const parent = label.closest('div[style*="display:flex"]');
   if(!parent) return;
+  // Reset todos
   parent.querySelectorAll('label').forEach(l=>{
-    l.style.background='transparent';
-    l.style.color = l.classList.contains('selected-nv')||l.textContent.includes('N/V')?'var(--muted)':l.textContent.includes('OK')?'#16a34a':'#dc2626';
+    const isOk = l.textContent.includes('OK');
+    const isAv = l.textContent.includes('Avaria');
+    l.style.background = isOk?'rgba(22,163,74,.08)':isAv?'rgba(220,38,38,.08)':'rgba(100,116,139,.08)';
+    l.style.color = isOk?'#16a34a':isAv?'#dc2626':'#64748b';
+    l.style.borderColor = isOk?'#16a34a':isAv?'#dc2626':'#64748b';
+    l.style.borderWidth='2px';
+    l.style.opacity='1';
+    l.style.boxShadow='none';
   });
-  const colors = {ok:'#16a34a', avaria:'#dc2626', nao_verificado:'var(--muted2)'};
-  const bgColors = {ok:'rgba(22,163,74,.1)', avaria:'rgba(220,38,38,.1)', nao_verificado:'rgba(100,116,139,.08)'};
+  // Destaca selecionado com fundo sólido
+  const bgColors = {ok:'#16a34a', avaria:'#dc2626', nao_verificado:'#475569'};
   label.style.background = bgColors[status];
-  label.style.color = colors[status];
+  label.style.color = '#fff';
+  label.style.borderColor = bgColors[status];
+  label.style.opacity = '1';
+  label.style.boxShadow = '0 2px 8px rgba(0,0,0,.18)';
   label.querySelector('input[type=radio]').checked = true;
 }
 
 // ══ PREVIEW DE FOTOS ══
 function _previewFotos(input, tipo){
-  const files = Array.from(input.files).slice(0,10);
+  const files = Array.from(input.files).slice(0,20);
   const wrap = document.getElementById(`fotos-preview-${tipo}`);
   if(!wrap) return;
   wrap.innerHTML = '';
@@ -420,8 +430,8 @@ async function salvarChecklist(tipo, locId){
       const path = `${locId}/${tipo}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const {data:up, error:upErr} = await sb.storage.from('checklists').upload(path, file);
       if(upErr) throw upErr;
-      const {data:urlData} = sb.storage.from('checklists').getPublicUrl(path);
-      fotoUrls.push(urlData.publicUrl);
+      const {data:signData} = await sb.storage.from('checklists').createSignedUrl(path, 60*60*24*365);
+      fotoUrls.push(signData?.signedUrl || '');
     }
 
     // Salva checklist no banco
