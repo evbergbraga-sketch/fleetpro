@@ -318,7 +318,8 @@ function renderInvestidores(){
   window._invEmPrep   = emPrepLista;
   const rendMensal    = qtdAtivos * RENDIMENTO_MES; // ex: 2 motos - 1 prep = 1 × 825 = 825 até liberar
   const rendAnual     = rendMensal * 12;
-  const rentabilidade = investimento > 0 ? ((rendMensal/investimento)*100).toFixed(2) : '0.00';
+  const investimentoAtivo = qtdAtivos * VALOR_MOTO; // só motos que já rendem
+  const rentabilidade = investimentoAtivo > 0 ? ((rendMensal/investimentoAtivo)*100).toFixed(2) : '0.00';
   const totalVeic     = veiculosFinal.length;
   const ocupFinal     = totalVeic > 0 ? Math.round(veiculosFinal.filter(v=>v.status==='alugado').length/totalVeic*100) : 0;
   const invSel        = isAdmin ? (document.getElementById('inv-selector')?.value || '') : '';
@@ -406,7 +407,7 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
       <span class="inv-stat-icon">📈</span>
       <div class="inv-stat-label">Rentabilidade</div>
       <div class="inv-stat-val">${rentabilidade}%</div>
-      <div class="inv-stat-sub">ao mês sobre o capital</div>
+      <div class="inv-stat-sub">ao mês sobre motos ativas</div>
     </div>
   </div>
 
