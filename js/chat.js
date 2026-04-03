@@ -1,45 +1,3 @@
-// ══ CONTROLE DA SARA ══
-let _saraStatus = {}; // { numero: 'bloqueado'|'livre' }
-
-function _renderBtnSara(telefone){
-  const wrap = document.getElementById('btn-sara-wrap');
-  if(!wrap) return;
-  if(!telefone){ wrap.innerHTML=''; return; }
-  const num = telefone.replace(/\D/g,'').slice(-11);
-  const bloqueado = _saraStatus[num] === 'bloqueado';
-  wrap.innerHTML = `
-    <button onclick="_toggleSara('${num}')" style="
-      font-size:11px;padding:5px 12px;border-radius:99px;cursor:pointer;font-weight:700;
-      background:${bloqueado?'rgba(22,163,74,.12)':'rgba(239,68,68,.12)'};
-      border:1px solid ${bloqueado?'rgba(22,163,74,.3)':'rgba(239,68,68,.3)'};
-      color:${bloqueado?'#16a34a':'#dc2626'};
-    ">
-      ${bloqueado?'▶️ Liberar SARA':'⏸️ Pausar SARA'}
-    </button>`;
-}
-
-async function _toggleSara(numero){
-  const bloqueado = _saraStatus[numero] === 'bloqueado';
-  const action = bloqueado ? 'unblock' : 'block';
-  try{
-    const cfg = JSON.parse(localStorage.getItem('fp_evo_cfg')||'{}');
-    const r = await fetch(cfg.bridgeUrl+'/sara/'+action, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-secret': cfg.secret||'FleetPro2025'},
-      body: JSON.stringify({numero})
-    });
-    if(!r.ok) throw new Error('Erro '+r.status);
-    _saraStatus[numero] = bloqueado ? 'livre' : 'bloqueado';
-    const c = allClientes.find(x=>activeChatId===x.id);
-    _renderBtnSara(c?.telefone||numero);
-    notify(bloqueado?'SARA liberada!':'SARA pausada — atendimento manual','success');
-  }catch(e){
-    notify('Erro ao controlar SARA: '+e.message,'error');
-  }
-}
-
-// chat.js — Chat WhatsApp, SSE, usuários e investidores
-
 // ══ CONFIG ══
 let wppCfg = {};
 let wppOk = false;
@@ -196,6 +154,13 @@ function preencherCamposWpp(){
     if(el) el.textContent = cfg.bridgeUrl+'/webhook/wpp  (header x-secret: '+(cfg.secret||'FleetPro2025')+')';
     conectarSSE(cfg.bridgeUrl, cfg.secret||'FleetPro2025');
     setWppStatus(true,'Conectado');
+    // Checa status SARA do chat ativo ao recarregar
+    setTimeout(()=>{
+      if(activeChatId){
+        const c = allClientes.find(x=>x.id===activeChatId);
+        if(c?.telefone) _checarStatusSara(c.telefone);
+      }
+    }, 1500);
   }
   const pers = JSON.parse(localStorage.getItem('fp_personalizacao')||'{}');
   if(pers.nome){ const e=document.getElementById('wpp-nome-locadora'); if(e) e.value=pers.nome; }
