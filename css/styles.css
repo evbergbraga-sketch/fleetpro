@@ -170,8 +170,8 @@ tr:hover td{background:var(--bg2);}
 
 /* ══ INPUTS ══ */
 .input-group{display:flex;gap:10px;margin-bottom:16px;align-items:center;}
-input,select,textarea{background:rgba(255,255,255,0.9);border:1px solid rgba(255,255,255,0.6);color:var(--text);padding:9px 14px;border-radius:8px;font-size:13px;font-family:var(--font-body);outline:none;transition:border-color .15s;}
-input:focus,select:focus,textarea:focus{border-color:var(--accent);background:#fff;}
+input,select,textarea{background:#fff;border:1.5px solid #d0d7e2;color:var(--text);padding:9px 14px;border-radius:8px;font-size:13px;font-family:var(--font-body);outline:none;transition:border-color .15s,box-shadow .15s;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.08);}
 .input-flex{flex:1;}
 select{cursor:pointer;}
 label{font-size:12px;color:var(--muted);margin-bottom:4px;display:block;}
