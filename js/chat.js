@@ -356,6 +356,9 @@ function abrirChat(cid){
     document.getElementById('chat-info').textContent = cid+' · Clique em Cadastrar para registrar';
     const btnCad = document.getElementById('btn-cadastrar-chat');
     if(btnCad) btnCad.style.display = 'flex';
+    // Esconde SARA para desconhecidos
+    const btnSara2 = document.getElementById('btn-sara-toggle');
+    if(btnSara2) btnSara2.style.display = 'none';
     renderChatMsgs(cid);
     renderChatContacts();
     return;
