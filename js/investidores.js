@@ -746,7 +746,13 @@ function _renderInvVeiculos(veiculosFinal){
               <div style="font-size:11px;color:#555">${v.ano||''} · ${v.cor||''}</div>
             </td>
             <td style="font-family:monospace;color:${INV_THEME.green};font-weight:600;white-space:nowrap">${v.placa}</td>
-            <td>${v.status==='alugado'?'<span class="inv-badge-green">Alugado</span>':'<span class="inv-badge-gray">Disponível</span>'}</td>
+            <td>${
+              v.status==='alugado' ? '<span class="inv-badge-green">Alugado</span>'
+              : v.status==='preparacao' ? '<span style="background:rgba(41,128,185,.12);color:#2980b9;border:1px solid rgba(41,128,185,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">⚙️ Em preparação</span>'
+              : v.status==='reservado' ? '<span style="background:rgba(37,99,235,.12);color:#2563eb;border:1px solid rgba(37,99,235,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">Reservado</span>'
+              : v.status==='manutencao' ? '<span style="background:rgba(240,192,64,.12);color:#f0c040;border:1px solid rgba(240,192,64,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">Manutenção</span>'
+              : '<span class="inv-badge-gray">Disponível</span>'
+            }</td>
             <td style="color:#aaa">${v.seguradora||'<span style="color:#333">—</span>'}</td>
             <td style="color:#aaa">${v.apolice||'<span style="color:#333">—</span>'}</td>
           </tr>`).join('')
@@ -834,6 +840,10 @@ window._abrirModalVeiculoInv = function(idx){
   const G = '#2ecc71';
   const statusBadge = v.status==='alugado'
     ? `<span style="background:rgba(46,204,113,.12);color:#2ecc71;border:1px solid rgba(46,204,113,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">Alugado</span>`
+    : v.status==='preparacao'
+    ? `<span style="background:rgba(41,128,185,.12);color:#2980b9;border:1px solid rgba(41,128,185,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">⚙️ Em preparação</span>`
+    : v.status==='reservado'
+    ? `<span style="background:rgba(37,99,235,.12);color:#2563eb;border:1px solid rgba(37,99,235,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">Reservado</span>`
     : v.status==='manutencao'
     ? `<span style="background:rgba(240,192,64,.12);color:#f0c040;border:1px solid rgba(240,192,64,.25);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">Manutenção</span>`
     : `<span style="background:rgba(255,255,255,.06);color:#888;border:1px solid #2a2a2a;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">Disponível</span>`;
