@@ -356,9 +356,10 @@ function abrirChat(cid){
     document.getElementById('chat-info').textContent = cid+' · Clique em Cadastrar para registrar';
     const btnCad = document.getElementById('btn-cadastrar-chat');
     if(btnCad) btnCad.style.display = 'flex';
-    // Esconde SARA para desconhecidos
+    // Mostra SARA mesmo para desconhecidos
     const btnSara2 = document.getElementById('btn-sara-toggle');
-    if(btnSara2) btnSara2.style.display = 'none';
+    if(btnSara2) btnSara2.style.display = '';
+    _checarStatusSara(cid);
     renderChatMsgs(cid);
     renderChatContacts();
     return;
@@ -643,8 +644,9 @@ function _renderBotaoSara(bloqueada){
 async function toggleSara(){
   if(!activeChatId) return;
   const c = allClientes.find(x=>x.id===activeChatId);
-  const telefone = c?.telefone || (activeChatId.includes('-') ? null : activeChatId);
-  if(!telefone){ notify('Cliente sem telefone','error'); return; }
+  // Usa telefone do cliente, ou o próprio activeChatId se for número (desconhecido)
+  const telefone = c?.telefone || (!activeChatId.includes('-') ? activeChatId : null);
+  if(!telefone){ notify('Não foi possível identificar o número','error'); return; }
   const numLimpo = telefone.replace(/\D/g,'').slice(-11);
   const bloqueada = _saraBloqueadas.has(numLimpo);
   const cfg = JSON.parse(localStorage.getItem('fp_evo_cfg')||'{}');
@@ -664,7 +666,8 @@ async function toggleSara(){
 }
 
 async function _checarStatusSara(telefone){
-  const numLimpo = (telefone||'').replace(/\D/g,'').slice(-11);
+  const numLimpo = (String(telefone)||'').replace(/\D/g,'').slice(-11);
+  if(!numLimpo){ document.getElementById('btn-sara-toggle') && _renderBotaoSara(false); return; }
   const cfg = JSON.parse(localStorage.getItem('fp_evo_cfg')||'{}');
   try{
     const r = await fetch((cfg.bridgeUrl||'').replace(/\/$/,'')+'/sara-status/'+numLimpo+'?secret=FleetPro2025');
