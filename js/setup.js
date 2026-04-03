@@ -324,6 +324,13 @@ function toggleSenhaVisivel(inputId, btnId){
   if(btn) btn.textContent = visivel ? '👁️' : '🙈';
 }
 
+// ══ TOGGLE CAMPOS INVESTIDOR NO MODAL CRIAR ══
+function _toggleCamposInvestidor(){
+  const perfil = document.getElementById('r-perfil')?.value;
+  const el = document.getElementById('campos-novo-investidor');
+  if(el) el.style.display = perfil==='investidor' ? '' : 'none';
+}
+
 // ══ CRIAR USUÁRIO (só admin) ══
 async function criarUsuarioAdmin(){
   if(currentPerfil?.perfil !== 'admin'){
@@ -343,7 +350,7 @@ async function criarUsuarioAdmin(){
     if(errEl){errEl.textContent='Preencha todos os campos.';errEl.style.display='block';}
     return;
   }
-  const {error}=await sb.auth.signUp({
+  const {data:signData, error}=await sb.auth.signUp({
     email, password:senha,
     options:{data:{nome,perfil}}
   });
@@ -351,11 +358,30 @@ async function criarUsuarioAdmin(){
     if(errEl){errEl.textContent='❌ '+error.message;errEl.style.display='block';}
     return;
   }
+
+  // Se for investidor, salva dados extras no perfil
+  if(perfil==='investidor' && signData?.user){
+    const dadosInv = {
+      empresa:       document.getElementById('r-empresa')?.value.trim()||null,
+      razao_social:  document.getElementById('r-razao')?.value.trim()||null,
+      cnpj_cpf:      document.getElementById('r-cnpj')?.value.trim()||null,
+      responsavel:   document.getElementById('r-responsavel')?.value.trim()||null,
+      telefone:      document.getElementById('r-telefone-inv')?.value.trim()||null,
+      email_empresa: document.getElementById('r-email-emp')?.value.trim()||null,
+    };
+    // Aguarda o perfil ser criado pelo trigger do Supabase e então atualiza
+    setTimeout(async()=>{
+      await sb.from('perfis').update(dadosInv).eq('id', signData.user.id);
+    }, 2000);
+  }
+
   if(okEl){okEl.textContent='✓ Usuário criado! Peça para ele confirmar o email.';okEl.style.display='block';}
   notify('Usuário '+nome+' criado com sucesso!','success');
-  ['r-nome','r-email','r-senha'].forEach(id=>{
+  ['r-nome','r-email','r-senha','r-empresa','r-razao','r-cnpj','r-responsavel','r-telefone-inv','r-email-emp'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
+  document.getElementById('campos-novo-investidor').style.display='none';
+  document.getElementById('r-perfil').value='atendente';
 }
 
 // ══ ALTERAR SENHA ══
