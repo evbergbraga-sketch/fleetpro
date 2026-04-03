@@ -351,7 +351,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
               </div>
               <div class="form-group">
                 <label>CPF do condutor principal</label>
-                <input type="text" id="c-condutor-cpf" placeholder="000.000.000-00" style="width:100%" oninput="maskCPF(this)" oninput="previewContrato()">
+                <input type="text" id="c-condutor-cpf" placeholder="000.000.000-00" style="width:100%" oninput="if(typeof maskCPF==='function')maskCPF(this);previewContrato()">
               </div>
             </div>
 
@@ -364,7 +364,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
               </div>
               <div class="form-group" style="margin:0">
                 <label>CPF</label>
-                <input type="text" id="novo-condutor-cpf" style="width:100%" oninput="maskCPF(this)" placeholder="000.000.000-00">
+                <input type="text" id="novo-condutor-cpf" style="width:100%" oninput="if(typeof maskCPF==='function')maskCPF(this)" placeholder="000.000.000-00">
               </div>
               <button class="btn btn-ghost" style="padding:9px 12px;font-size:12px;white-space:nowrap" onclick="_adicionarCondutor()">+ Adicionar</button>
             </div>
@@ -955,7 +955,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
     <input type="hidden" id="ec-id">
     <div class="form-grid">
       <div class="form-group full"><label>Nome completo</label><input type="text" id="ec-nome" style="width:100%"></div>
-      <div class="form-group"><label>CPF</label><input type="text" id="ec-cpf" style="width:100%" oninput="maskCPF(this)" placeholder="000.000.000-00"></div>
+      <div class="form-group"><label>CPF</label><input type="text" id="ec-cpf" style="width:100%" oninput="if(typeof maskCPF==='function')maskCPF(this)" placeholder="000.000.000-00"></div>
       <div class="form-group"><label>Telefone</label><input type="text" id="ec-tel" style="width:100%"></div>
       <div class="form-group full"><label>Email</label><input type="email" id="ec-email" style="width:100%"></div>
       <div class="form-group"><label>Nº CNH</label><input type="text" id="ec-cnh" style="width:100%"></div>
@@ -1013,7 +1013,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
           </select>
         </div>
         <div class="form-group"><label>Proprietário</label><input type="text" id="mv-proprietario-nome" style="width:100%"></div>
-        <div class="form-group"><label>CPF/CNPJ proprietário</label><input type="text" id="mv-cpf-cnpj-prop" style="width:100%" oninput="maskCPF(this)" placeholder="000.000.000-00"></div>
+        <div class="form-group"><label>CPF/CNPJ proprietário</label><input type="text" id="mv-cpf-cnpj-prop" style="width:100%" placeholder="CPF ou CNPJ"></div>
       </div>
 
       <!-- COMPRA -->
@@ -1149,7 +1149,7 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
       <div class="form-section-title">👤 Proprietário</div>
       <div class="form-grid">
         <div class="form-group"><label>Nome do proprietário</label><input type="text" id="ev-proprietario-nome" style="width:100%"></div>
-        <div class="form-group"><label>CPF/CNPJ do proprietário</label><input type="text" id="ev-cpf-cnpj-prop" style="width:100%" oninput="maskCPF(this)" placeholder="000.000.000-00"></div>
+        <div class="form-group"><label>CPF/CNPJ do proprietário</label><input type="text" id="ev-cpf-cnpj-prop" style="width:100%" placeholder="CPF ou CNPJ"></div>
       </div>
 
       <div class="form-section-title">🛒 Dados de compra</div>
