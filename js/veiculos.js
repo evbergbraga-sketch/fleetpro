@@ -1,3 +1,135 @@
+// ══ IPVA E MANUTENÇÕES DINÂMICOS ══
+let _veicIpvas = [];       // [{ano, valor, vencimento}]
+let _veicManutencoes = []; // [{data, tipo, obs}]
+
+function _addIpva(prefix){
+  const ano = new Date().getFullYear();
+  _veicIpvas.push({ano: String(ano), valor:'', vencimento:''});
+  _renderIpvas(prefix);
+}
+
+function _removeIpva(i, prefix){
+  _veicIpvas.splice(i,1);
+  _renderIpvas(prefix);
+}
+
+function _renderIpvas(prefix){
+  const wrap = document.getElementById(prefix+'-ipvas');
+  if(!wrap) return;
+  if(!_veicIpvas.length){
+    wrap.innerHTML='<div style="font-size:12px;color:var(--muted2);padding:6px 0">Nenhum IPVA cadastrado. Clique em "+ Ano" para adicionar.</div>';
+    return;
+  }
+  wrap.innerHTML = _veicIpvas.map((ip,i)=>`
+    <div style="display:grid;grid-template-columns:80px 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px;background:var(--bg2);padding:10px;border-radius:8px;border:1px solid var(--border2)">
+      <div class="form-group" style="margin:0">
+        <label style="font-size:10px">Ano</label>
+        <input type="number" value="${ip.ano}" min="2020" max="2030" style="width:100%" onchange="_veicIpvas[${i}].ano=this.value">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label style="font-size:10px">Valor (R$)</label>
+        <input type="number" value="${ip.valor}" step="0.01" style="width:100%" onchange="_veicIpvas[${i}].valor=this.value">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label style="font-size:10px">Vencimento</label>
+        <input type="date" value="${ip.vencimento}" style="width:100%" onchange="_veicIpvas[${i}].vencimento=this.value">
+      </div>
+      <button onclick="_removeIpva(${i},'${prefix}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:4px;align-self:center">✕</button>
+    </div>`).join('');
+}
+
+function _addManutencao(prefix){
+  _veicManutencoes.push({data: new Date().toISOString().slice(0,10), tipo:'Revisão', obs:''});
+  _renderManutencoes(prefix);
+}
+
+function _removeManutencao(i, prefix){
+  _veicManutencoes.splice(i,1);
+  _renderManutencoes(prefix);
+}
+
+function _renderManutencoes(prefix){
+  const wrap = document.getElementById(prefix+'-manutencoes');
+  if(!wrap) return;
+  if(!_veicManutencoes.length){
+    wrap.innerHTML='<div style="font-size:12px;color:var(--muted2);padding:6px 0">Nenhuma manutenção registrada. Clique em "+ Adicionar".</div>';
+    return;
+  }
+  wrap.innerHTML = _veicManutencoes.map((m,i)=>`
+    <div style="background:var(--bg2);padding:10px;border-radius:8px;border:1px solid var(--border2);margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:6px">
+        <div class="form-group" style="margin:0">
+          <label style="font-size:10px">Data</label>
+          <input type="date" value="${m.data}" style="width:100%" onchange="_veicManutencoes[${i}].data=this.value">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label style="font-size:10px">Tipo</label>
+          <select style="width:100%" onchange="_veicManutencoes[${i}].tipo=this.value">
+            <option ${m.tipo==='Revisão'?'selected':''}>Revisão</option>
+            <option ${m.tipo==='Troca de óleo'?'selected':''}>Troca de óleo</option>
+            <option ${m.tipo==='Pneu'?'selected':''}>Pneu</option>
+            <option ${m.tipo==='Freios'?'selected':''}>Freios</option>
+            <option ${m.tipo==='Corrente'?'selected':''}>Corrente</option>
+            <option ${m.tipo==='Elétrica'?'selected':''}>Elétrica</option>
+            <option ${m.tipo==='Funilaria'?'selected':''}>Funilaria</option>
+            <option ${m.tipo==='Outro'?'selected':''}>Outro</option>
+          </select>
+        </div>
+        <button onclick="_removeManutencao(${i},'${prefix}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:4px">✕</button>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label style="font-size:10px">Observação</label>
+        <textarea rows="2" style="width:100%;resize:vertical;font-size:12px" placeholder="Descreva o que foi feito..." onchange="_veicManutencoes[${i}].obs=this.value">${m.obs}</textarea>
+      </div>
+    </div>`).join('');
+}
+
+function _coletarCamposExtras(prefix){
+  const g = id => document.getElementById(prefix+'-'+id)?.value||null;
+  return {
+    chassi:              g('chassi')||null,
+    renavam:             g('renavam')||null,
+    estado:              g('estado')||null,
+    proprietario_nome:   g('proprietario-nome')||null,
+    cpf_cnpj_proprietario: g('cpf-cnpj-prop')||null,
+    data_compra:         g('data-compra')||null,
+    valor_compra:        parseFloat(g('valor-compra'))||null,
+    nf_compra:           g('nf-compra')||null,
+    fornecedor:          g('fornecedor')||null,
+    hodometro_entrada:   parseInt(g('hodometro-entrada'))||null,
+    local_entrega:       g('local-entrega')||null,
+    data_entrada:        g('data-entrada')||null,
+    data_entrega:        g('data-entrega')||null,
+    produtos:            g('produtos')||null,
+    ipvas:               _veicIpvas.length>0 ? JSON.stringify(_veicIpvas) : null,
+    manutencoes_veiculo: _veicManutencoes.length>0 ? JSON.stringify(_veicManutencoes) : null,
+  };
+}
+
+function _preencherCamposExtras(prefix, v){
+  const s = (id,val)=>{ const e=document.getElementById(prefix+'-'+id); if(e) e.value=val||''; };
+  s('chassi', v.chassi);
+  s('renavam', v.renavam);
+  s('estado', v.estado);
+  s('proprietario-nome', v.proprietario_nome);
+  s('cpf-cnpj-prop', v.cpf_cnpj_proprietario);
+  s('data-compra', v.data_compra);
+  s('valor-compra', v.valor_compra);
+  s('nf-compra', v.nf_compra);
+  s('fornecedor', v.fornecedor);
+  s('hodometro-entrada', v.hodometro_entrada);
+  s('local-entrega', v.local_entrega);
+  s('data-entrada', v.data_entrada);
+  s('data-entrega', v.data_entrega);
+  s('produtos', v.produtos);
+  // IPVA
+  try{ _veicIpvas = v.ipvas ? JSON.parse(v.ipvas) : []; }catch(e){ _veicIpvas=[]; }
+  _renderIpvas(prefix);
+  // Manutenções
+  try{ _veicManutencoes = v.manutencoes_veiculo ? JSON.parse(v.manutencoes_veiculo) : []; }catch(e){ _veicManutencoes=[]; }
+  _renderManutencoes(prefix);
+}
+
 // veiculos.js — Gestão de veículos
 
 function statusBadge(s){
@@ -57,27 +189,8 @@ function editarVeiculo(id){
   document.getElementById('ev-cambio').value= v.cambio||'Automatico';
   document.getElementById('ev-km').value    = v.km_atual||0;
   document.getElementById('ev-diaria').value= v.diaria||'';
-  document.getElementById('ev-status').value      = v.status||'disponivel';
-  document.getElementById('ev-data-entrada').value  = v.data_entrada||'';
-  document.getElementById('ev-chassi').value         = v.chassi||'';
-  document.getElementById('ev-renavam').value        = v.renavam||'';
-  document.getElementById('ev-estado').value         = v.estado||'';
-  document.getElementById('ev-hodometro-entrada').value = v.hodometro_entrada||'';
-  document.getElementById('ev-local-entrega').value  = v.local_entrega||'';
-  document.getElementById('ev-data-entrega').value   = v.data_entrega||'';
-  document.getElementById('ev-proprietario-nome').value = v.proprietario_nome||'';
-  document.getElementById('ev-cpf-cnpj-prop').value  = v.cpf_cnpj_proprietario||'';
-  document.getElementById('ev-data-compra').value    = v.data_compra||'';
-  document.getElementById('ev-valor-compra').value   = v.valor_compra||'';
-  document.getElementById('ev-nf-compra').value      = v.nf_compra||'';
-  document.getElementById('ev-fornecedor').value     = v.fornecedor||'';
-  document.getElementById('ev-ipva25-val').value     = v.ipva_2025_valor||'';
-  document.getElementById('ev-ipva25-venc').value    = v.ipva_2025_vencimento||'';
-  document.getElementById('ev-ipva26-val').value     = v.ipva_2026_valor||'';
-  document.getElementById('ev-ipva26-venc').value    = v.ipva_2026_vencimento||'';
-  document.getElementById('ev-ultima-revisao').value = v.ultima_revisao||'';
-  document.getElementById('ev-proxima-revisao').value= v.proxima_revisao||'';
-  document.getElementById('ev-produtos').value       = v.produtos||'';
+  document.getElementById('ev-status').value = v.status||'disponivel';
+  _preencherCamposExtras('ev', v);
   document.getElementById('ev-obs').value   = v.observacoes||'';
   preencherSelectInvestidores('ev-investidor').then(()=>{
     const sel = document.getElementById('ev-investidor');
@@ -99,27 +212,8 @@ async function atualizarVeiculo(){
     cambio:       document.getElementById('ev-cambio').value,
     km_atual:     parseInt(document.getElementById('ev-km').value)||0,
     diaria:       parseFloat(document.getElementById('ev-diaria').value)||0,
-    status:              document.getElementById('ev-status').value,
-    data_entrada:        document.getElementById('ev-data-entrada').value||null,
-    chassi:              document.getElementById('ev-chassi').value.trim()||null,
-    renavam:             document.getElementById('ev-renavam').value.trim()||null,
-    estado:              document.getElementById('ev-estado').value||null,
-    hodometro_entrada:   parseInt(document.getElementById('ev-hodometro-entrada').value)||null,
-    local_entrega:       document.getElementById('ev-local-entrega').value.trim()||null,
-    data_entrega:        document.getElementById('ev-data-entrega').value||null,
-    proprietario_nome:   document.getElementById('ev-proprietario-nome').value.trim()||null,
-    cpf_cnpj_proprietario: document.getElementById('ev-cpf-cnpj-prop').value.trim()||null,
-    data_compra:         document.getElementById('ev-data-compra').value||null,
-    valor_compra:        parseFloat(document.getElementById('ev-valor-compra').value)||null,
-    nf_compra:           document.getElementById('ev-nf-compra').value.trim()||null,
-    fornecedor:          document.getElementById('ev-fornecedor').value.trim()||null,
-    ipva_2025_valor:     parseFloat(document.getElementById('ev-ipva25-val').value)||null,
-    ipva_2025_vencimento:document.getElementById('ev-ipva25-venc').value||null,
-    ipva_2026_valor:     parseFloat(document.getElementById('ev-ipva26-val').value)||null,
-    ipva_2026_vencimento:document.getElementById('ev-ipva26-venc').value||null,
-    ultima_revisao:      document.getElementById('ev-ultima-revisao').value||null,
-    proxima_revisao:     document.getElementById('ev-proxima-revisao').value||null,
-    produtos:            document.getElementById('ev-produtos').value.trim()||null,
+    status: document.getElementById('ev-status').value,
+    ..._coletarCamposExtras('ev'),
     observacoes:  document.getElementById('ev-obs').value.trim(),
     investidor_id:document.getElementById('ev-investidor')?.value||null,
   };
@@ -169,13 +263,16 @@ async function salvarVeiculo(){
   const btn = document.querySelector('#m-veiculo .btn-primary');
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
   try{
+    const extrasMv = _coletarCamposExtras('mv');
+    const statusMv = document.getElementById('mv-status')?.value||'disponivel';
     const {error}=await sb.from('veiculos').insert({
       tipo,marca,modelo,placa,ano,cor,cambio,km_atual:km,diaria,observacoes:obs,
-      investidor_id:investidor_id||null
+      investidor_id:investidor_id||null, status:statusMv, ...extrasMv
     }).select().single();
     if(error) throw error;
     notify('Veículo cadastrado com sucesso!','success');
     closeModal('veiculo');
+    _veicIpvas=[]; _veicManutencoes=[]; _renderIpvas('mv'); _renderManutencoes('mv');
     ['mv-marca','mv-modelo','mv-placa','mv-ano','mv-cor','mv-km','mv-diaria','mv-obs'].forEach(id=>{
       const el=document.getElementById(id); if(el) el.value='';
     });
