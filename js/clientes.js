@@ -48,6 +48,7 @@ async function salvarCliente(){
   const end  = document.getElementById('mc-end').value.trim();
   const obs  = document.getElementById('mc-obs').value.trim();
   if(!nome||!cpf){notify('Nome e CPF são obrigatórios','error');return;}
+  if(!checarCPF(cpf,'CPF do cliente')) return;
   const btn = document.querySelector('#m-cliente .btn-primary');
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
   try{
@@ -110,6 +111,7 @@ async function atualizarCliente(){
     observacoes: document.getElementById('ec-obs').value.trim(),
   };
   if(!obj.nome||!obj.cpf){notify('Nome e CPF obrigatórios','error');return;}
+  if(!checarCPF(obj.cpf,'CPF do cliente')) return;
   const btn = document.querySelector('#m-editar-cliente .btn-primary');
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
   try{
