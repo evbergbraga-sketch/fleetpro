@@ -66,10 +66,16 @@ function receberMsgSSE(msg){
   const cidPorNumero = encontrarClientePorNumero(msg.numero);
   const cid          = cidPorId || cidPorNumero || msg.numero;
 
+  // fromMe pode vir do Bridge ou identificado pelo campo sara/agente
+  const fromMe = msg.fromMe===true || msg.fromMe==='true' 
+    || msg.from_me===true || msg.from_me==='true'
+    || msg.sara===true || msg.agente===true || msg.fromSara===true;
+
   const msgObj = {
     texto:      msg.texto||'',
     tipo:       msg.tipoMsg||msg.tipo||'text',
-    direcao:    'entrada',
+    direcao:    fromMe ? 'saida' : 'entrada',
+    out:        fromMe,
     media_url:  msg.mediaUrl||msg.media_url||null,
     created_at: msg.createdAt||msg.created_at||new Date().toISOString()
   };
