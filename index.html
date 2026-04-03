@@ -786,24 +786,80 @@ insert into veiculos (tipo,marca,modelo,placa,ano,cor,cambio,km_atual,diaria,sta
 
 <!-- ═══════════════════ MODAIS ═══════════════════ -->
 
+<!-- MODAL EDITAR USUÁRIO -->
+<div class="modal-overlay" id="m-editar-usuario">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header"><div class="modal-title">✏️ Editar Usuário</div><button class="modal-close" onclick="closeModal('editar-usuario')">✕</button></div>
+    <div style="padding:16px 20px">
+      <input type="hidden" id="eu-id">
+      <div class="form-grid">
+        <div class="form-group full"><label>Nome completo</label><input type="text" id="eu-nome" placeholder="Nome do usuário" style="width:100%"></div>
+        <div class="form-group full"><label>Perfil</label>
+          <select id="eu-perfil" style="width:100%" onchange="_toggleEuInvestidor()">
+            <option value="atendente">🧑‍💼 Atendente</option>
+            <option value="admin">👑 Administrador</option>
+            <option value="investidor">📈 Investidor</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- CAMPOS INVESTIDOR -->
+      <div id="eu-campos-inv" style="display:none;margin-top:4px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted2);margin:12px 0 10px;border-top:1px solid var(--border2);padding-top:14px">🏢 Dados da empresa</div>
+        <div class="form-grid">
+          <div class="form-group full"><label>Nome / Empresa</label><input type="text" id="eu-empresa" placeholder="Nome ou razão comercial" style="width:100%"></div>
+          <div class="form-group full"><label>Razão social</label><input type="text" id="eu-razao" placeholder="Razão social completa" style="width:100%"></div>
+          <div class="form-group"><label>CNPJ / CPF</label><input type="text" id="eu-cnpj" placeholder="00.000.000/0001-00" style="width:100%"></div>
+          <div class="form-group"><label>Responsável</label><input type="text" id="eu-resp" placeholder="Nome do responsável" style="width:100%"></div>
+          <div class="form-group"><label>Telefone</label><input type="text" id="eu-tel" placeholder="(21) 99999-9999" style="width:100%"></div>
+          <div class="form-group"><label>E-mail empresa</label><input type="text" id="eu-email-emp" placeholder="contato@empresa.com" style="width:100%"></div>
+        </div>
+      </div>
+
+      <div id="eu-err" style="display:none;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px;padding:8px 12px;font-size:12px;color:#dc2626;margin:8px 0"></div>
+      <div id="eu-ok"  style="display:none;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:6px;padding:8px 12px;font-size:12px;color:#16a34a;margin:8px 0"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('editar-usuario')">Cancelar</button>
+      <button class="btn btn-primary" id="eu-btn-salvar" onclick="salvarEdicaoUsuario()">✓ Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL CRIAR USUÁRIO -->
 <div class="modal-overlay" id="m-criar-usuario">
-  <div class="modal">
+  <div class="modal" style="max-width:520px">
     <div class="modal-header"><div class="modal-title">Criar Usuário</div><button class="modal-close" onclick="closeModal('criar-usuario')">✕</button></div>
-    <div class="form-grid">
-      <div class="form-group full"><label>Nome completo</label><input type="text" id="r-nome" placeholder="Nome do usuário" style="width:100%"></div>
-      <div class="form-group full"><label>Email</label><input type="email" id="r-email" placeholder="email@exemplo.com" style="width:100%"></div>
-      <div class="form-group"><label>Senha</label><input type="password" id="r-senha" placeholder="Mínimo 6 caracteres" style="width:100%"></div>
-      <div class="form-group"><label>Perfil</label>
-        <select id="r-perfil" style="width:100%">
-          <option value="atendente">🧑‍💼 Atendente</option>
-          <option value="admin">👑 Administrador</option>
-          <option value="investidor">📈 Investidor</option>
-        </select>
+    <div style="padding:16px 20px">
+      <div class="form-grid">
+        <div class="form-group full"><label>Nome completo</label><input type="text" id="r-nome" placeholder="Nome do usuário" style="width:100%"></div>
+        <div class="form-group full"><label>Email</label><input type="email" id="r-email" placeholder="email@exemplo.com" style="width:100%"></div>
+        <div class="form-group"><label>Senha</label><input type="password" id="r-senha" placeholder="Mínimo 6 caracteres" style="width:100%"></div>
+        <div class="form-group"><label>Perfil</label>
+          <select id="r-perfil" style="width:100%" onchange="_toggleCamposInvestidor()">
+            <option value="atendente">🧑‍💼 Atendente</option>
+            <option value="admin">👑 Administrador</option>
+            <option value="investidor">📈 Investidor</option>
+          </select>
+        </div>
       </div>
+
+      <!-- CAMPOS INVESTIDOR — aparece só quando perfil=investidor -->
+      <div id="campos-novo-investidor" style="display:none;margin-top:4px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted2);margin:12px 0 10px;border-top:1px solid var(--border2);padding-top:14px">🏢 Dados da empresa</div>
+        <div class="form-grid">
+          <div class="form-group full"><label>Nome / Empresa</label><input type="text" id="r-empresa" placeholder="Nome ou razão comercial" style="width:100%"></div>
+          <div class="form-group full"><label>Razão social</label><input type="text" id="r-razao" placeholder="Razão social completa" style="width:100%"></div>
+          <div class="form-group"><label>CNPJ / CPF</label><input type="text" id="r-cnpj" placeholder="00.000.000/0001-00" style="width:100%"></div>
+          <div class="form-group"><label>Responsável</label><input type="text" id="r-responsavel" placeholder="Nome do responsável" style="width:100%"></div>
+          <div class="form-group"><label>Telefone</label><input type="text" id="r-telefone-inv" placeholder="(21) 99999-9999" style="width:100%"></div>
+          <div class="form-group"><label>E-mail empresa</label><input type="text" id="r-email-emp" placeholder="contato@empresa.com" style="width:100%"></div>
+        </div>
+      </div>
+
+      <div class="login-err" id="register-err" style="margin:8px 0"></div>
+      <div class="login-ok"  id="register-ok" style="margin:8px 0"></div>
     </div>
-    <div class="login-err" id="register-err" style="margin:8px 0"></div>
-    <div class="login-ok"  id="register-ok" style="margin:8px 0"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('criar-usuario')">Cancelar</button>
       <button class="btn btn-primary" onclick="criarUsuarioAdmin()">✓ Criar usuário</button>
