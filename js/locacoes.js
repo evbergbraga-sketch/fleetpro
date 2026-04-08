@@ -244,7 +244,18 @@ function _renderChecklistExistente(check){
     <div style="margin-top:12px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-bottom:8px">Fotos (${fotos.length})</div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
-        ${fotos.map(url=>`<img src="${url}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border2)" onclick="window.open('${url}','_blank')">`).join('')}
+        ${fotos.map((url,fi)=>{
+          const fid='foto'+Date.now()+fi;
+          setTimeout(async()=>{
+            const el=document.getElementById(fid);
+            if(el && typeof _getSignedUrl==='function'){
+              const su=await _getSignedUrl(url);
+              el.src=su;
+              el.onclick=()=>window.open(su,'_blank');
+            }
+          },100+fi*50);
+          return `<img id="${fid}" src="" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border2)">`;
+        }).join('')}
       </div>
     </div>`:''}
   </div>`;
