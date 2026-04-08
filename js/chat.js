@@ -245,27 +245,36 @@ function renderMsgItem(m){
   let corpo = '';
   if(tipo==='image'||tipo==='imageMessage'){
     if(mediaUrl){
-      corpo = '<img src="'+mediaUrl+'" style="max-width:220px;border-radius:8px;display:block;margin-bottom:4px;cursor:pointer" onclick="window.open(\''+mediaUrl+'\',\'_blank\')">';
+      // Usa URL assinada via data attribute — carrega após render
+      const mid = 'mi'+Date.now()+Math.random().toString(36).slice(2);
+      corpo = '<img id="'+mid+'" src="" style="max-width:220px;border-radius:8px;display:block;margin-bottom:4px;cursor:pointer" onclick="window.open(this.src,\'_blank\')">';
       if(m.texto) corpo += '<div style="font-size:12px">'+m.texto+'</div>';
+      setTimeout(async()=>{ const el=document.getElementById(mid); if(el){ const u=await _getSignedUrl(mediaUrl); el.src=u; el.onclick=()=>window.open(u,'_blank'); }},50);
     } else {
       corpo = '<div style="font-size:12px;color:var(--muted)">🖼️ Imagem '+(m.texto||'')+'</div>';
     }
   } else if(tipo==='audio'||tipo==='ptt'||tipo==='audioMessage'||tipo==='pttMessage'){
     if(mediaUrl){
-      corpo = '<audio controls style="max-width:220px;min-width:160px"><source src="'+mediaUrl+'">Seu navegador nao suporta audio.</audio>';
+      const aid = 'au'+Date.now()+Math.random().toString(36).slice(2);
+      corpo = '<audio id="'+aid+'" controls style="max-width:220px;min-width:160px"><source src="">Seu navegador nao suporta audio.</audio>';
+      setTimeout(async()=>{ const el=document.getElementById(aid); if(el){ const u=await _getSignedUrl(mediaUrl); el.querySelector('source').src=u; el.load(); }},50);
     } else {
       corpo = '<div style="font-size:12px;color:var(--muted)">🎵 Áudio '+(m.texto||'')+'</div>';
     }
   } else if(tipo==='video'||tipo==='videoMessage'){
     if(mediaUrl){
-      corpo = '<video controls style="max-width:280px;border-radius:8px;display:block"><source src="'+mediaUrl+'">Seu navegador não suporta vídeo.</video>';
+      const vid = 'vi'+Date.now()+Math.random().toString(36).slice(2);
+      corpo = '<video id="'+vid+'" controls style="max-width:280px;border-radius:8px;display:block"><source src="">Seu navegador não suporta vídeo.</video>';
       if(m.texto && m.texto!=='Vídeo') corpo += '<div style="font-size:12px;margin-top:4px">'+m.texto+'</div>';
+      setTimeout(async()=>{ const el=document.getElementById(vid); if(el){ const u=await _getSignedUrl(mediaUrl); el.querySelector('source').src=u; el.load(); }},50);
     } else {
       corpo = '<div style="font-size:12px;color:var(--muted)">🎥 Vídeo '+(m.texto||'')+'</div>';
     }
   } else if(tipo==='document'||tipo==='documentMessage'){
     if(mediaUrl){
-      corpo = '<div>📎 <a href="'+mediaUrl+'" target="_blank" style="color:var(--accent)">'+(m.texto||'Abrir documento')+'</a></div>';
+      const did = 'di'+Date.now()+Math.random().toString(36).slice(2);
+      corpo = '<div>📎 <a id="'+did+'" href="#" target="_blank" style="color:var(--accent)">'+(m.texto||'Abrir documento')+'</a></div>';
+      setTimeout(async()=>{ const el=document.getElementById(did); if(el){ const u=await _getSignedUrl(mediaUrl); el.href=u; }},50);
     } else {
       corpo = '<div style="font-size:12px;color:var(--muted)">📎 Documento '+(m.texto||'')+'</div>';
     }
