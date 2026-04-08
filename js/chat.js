@@ -497,8 +497,19 @@ async function _enviarMidiaWpp(c){
       try{ msg = JSON.parse(t)?.message||t; }catch(_){}
       throw new Error(msg);
     }
+    // Faz upload para o Supabase Storage para persistir no histórico
+    let storageUrl = null;
+    try{
+      const ext = fileRef.name.split('.').pop();
+      const path = `chat/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { data: upData, error: upErr } = await sb.storage.from('wpp-media').upload(path, fileRef);
+      if(!upErr && upData){
+        // Salva o path — URL assinada gerada ao exibir
+        storageUrl = `https://jjeogfafgbexgxqhubha.supabase.co/storage/v1/object/wpp-media/${path}`;
+      }
+    }catch(_){}
     adicionarMsgLocal(activeChatId, fileName||'Arquivo', tipo, localUrl);
-    await salvarMsgDB(c?.id||null, telefone, fileName||'Arquivo', tipo, 'saida', null);
+    await salvarMsgDB(c?.id||null, telefone, fileName||'Arquivo', tipo, 'saida', storageUrl);
     cancelarMidia();
     notify('Arquivo enviado ✓','success');
   }catch(err){
