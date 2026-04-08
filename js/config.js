@@ -135,3 +135,24 @@ function checarCpfCnpj(valor, campo='CPF/CNPJ'){
   }
   return true;
 }
+
+// ══ URL ASSINADA PARA MÍDIA ══
+const _urlCache = {};
+
+async function _getSignedUrl(url){
+  if(!url) return url;
+  if(!url.includes('supabase.co/storage')) return url;
+  if(_urlCache[url] && _urlCache[url].exp > Date.now()) return _urlCache[url].signed;
+  const cfg = JSON.parse(localStorage.getItem('fp_evo_cfg')||'{}');
+  const bridge = (cfg.bridgeUrl||'https://bridge.ruahsystems.com.br').replace(/\/$/,'');
+  const bucket = url.includes('wpp-media') ? 'wpp-media' : 'checklists';
+  try{
+    const r = await fetch(`${bridge}/media-url?bucket=${bucket}&path=${encodeURIComponent(url)}&secret=FleetPro2025`);
+    const data = await r.json();
+    if(data.ok && data.url){
+      _urlCache[url] = { signed: data.url, exp: Date.now() + 3500000 };
+      return data.url;
+    }
+  }catch(_){}
+  return url;
+}
