@@ -758,10 +758,21 @@ function abrirCadastroClienteChat(){
 
 function setMsg(t){ const i=document.getElementById('chat-msg-input'); if(i){i.value=t;i.focus();} }
 
-// ── RECONEXÃO SSE AO VOLTAR PARA A ABA ──
-// Só reconecta o SSE se caiu — não mexe nos dados nem na tela
+// ── RECONEXÃO AO VOLTAR PARA A ABA ──
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState !== 'visible') return;
+
+  // 1. Recria cliente Supabase — evita estado corrompido após suspensão do Chrome
+  const fpUrl = localStorage.getItem('fp_url');
+  const fpKey = localStorage.getItem('fp_key');
+  if(fpUrl && fpKey && typeof createClient !== 'undefined'){
+    sb = createClient(fpUrl, fpKey, {
+      auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:false }
+    });
+    console.log('[Supabase] Cliente recriado após retorno à aba');
+  }
+
+  // 2. Reconecta SSE se caiu
   const cfg = JSON.parse(localStorage.getItem(EVO_CFG_KEY)||'{}');
   if(cfg.bridgeUrl){
     const sseCaiu = !sseSource || sseSource.readyState === EventSource.CLOSED;
