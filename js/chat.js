@@ -759,7 +759,6 @@ function abrirCadastroClienteChat(){
 function setMsg(t){ const i=document.getElementById('chat-msg-input'); if(i){i.value=t;i.focus();} }
 
 // ── RECONEXÃO INTELIGENTE AO VOLTAR PARA A ABA ──
-// Substitui o window.location.reload() — reconecta SSE sem perder dados da tela
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState !== 'visible') return;
 
@@ -773,9 +772,17 @@ document.addEventListener('visibilitychange', ()=>{
     }
   }
 
-  // 2. Recarrega dados silenciosamente em background
-  // Não toca na tela, não apaga formulários, não perde estado
+  // 2. Recarrega dados silenciosamente — sem tocar na tela
   if(typeof carregarTudo === 'function'){
-    carregarTudo().catch(e=>console.warn('[reconexão] carregarTudo erro:', e));
+    carregarTudo()
+      .then(()=>{
+        // 3. Se o chat estiver aberto e tiver conversa ativa, re-renderiza o chat
+        const paginaAtiva = document.querySelector('.page.active')?.id;
+        if(paginaAtiva === 'page-chat' && activeChatId){
+          renderChatMsgs(activeChatId);
+          renderChatContacts();
+        }
+      })
+      .catch(e=>console.warn('[reconexão] erro:', e));
   }
 });
