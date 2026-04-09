@@ -390,6 +390,11 @@ function _renderAgendaSemanal(locacoes, reservas, manutencoes){
   }
   painel.innerHTML = '';
   _agendaDiaAtivo = null;
+
+  // Abre automaticamente o painel do dia atual
+  const hojeStr = hoje.toISOString().slice(0,10);
+  const elHoje = grid.querySelector(`[data-dia="${hojeStr}"]`);
+  if(elHoje) setTimeout(()=>_agendaAbrirDia(hojeStr, elHoje), 50);
 }
 
 function _agendaAbrirDia(dStr, el){
