@@ -95,6 +95,13 @@ function receberMsgSSE(msg){
     if(area){
       const ph = area.querySelector('[data-placeholder]');
       if(ph) ph.remove();
+      // Insere separador de data se necessário antes da nova mensagem via SSE
+      const ultimaMsg = area.querySelector('.msg[data-msg-date]:last-of-type');
+      const ultimaData = ultimaMsg ? ultimaMsg.dataset.msgDate : null;
+      const novaData = msgObj.created_at ? new Date(msgObj.created_at).toDateString() : null;
+      if(novaData && novaData !== ultimaData){
+        area.insertAdjacentHTML('beforeend', _dateSeparatorHtml(_fmtDateSeparator(msgObj.created_at)));
+      }
       area.insertAdjacentHTML('beforeend', renderMsgItem(msgObj));
       area.scrollTop = area.scrollHeight;
     }
@@ -233,6 +240,29 @@ async function evoSendText(telefone, texto){
   return await r.json();
 }
 
+// ── SEPARADORES DE DATA ──
+function _fmtDateSeparator(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr);
+  const hoje = new Date();
+  const ontem = new Date(); ontem.setDate(ontem.getDate()-1);
+  const sameDay = (a,b) =>
+    a.getDate()===b.getDate() &&
+    a.getMonth()===b.getMonth() &&
+    a.getFullYear()===b.getFullYear();
+  if(sameDay(d, hoje)) return 'Hoje';
+  if(sameDay(d, ontem)) return 'Ontem';
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+}
+
+function _dateSeparatorHtml(label){
+  return `<div style="display:flex;align-items:center;gap:8px;margin:12px 16px;">
+    <div style="flex:1;height:1px;background:var(--border2)"></div>
+    <div style="font-size:11px;color:var(--muted);background:var(--bg2);padding:2px 10px;border-radius:99px;border:1px solid var(--border2);white-space:nowrap">${label}</div>
+    <div style="flex:1;height:1px;background:var(--border2)"></div>
+  </div>`;
+}
+
 // ── RENDER ──
 function renderMsgItem(m){
   const out    = m.direcao==='saida' || m.out===true;
@@ -242,10 +272,10 @@ function renderMsgItem(m){
   const t    = m.created_at
     ? new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
     : (m.time||'');
+  const msgDate = m.created_at ? new Date(m.created_at).toDateString() : '';
   let corpo = '';
   if(tipo==='image'||tipo==='imageMessage'){
     if(mediaUrl){
-      // Usa URL assinada via data attribute — carrega após render
       const mid = 'mi'+Date.now()+Math.random().toString(36).slice(2);
       corpo = '<img id="'+mid+'" src="" style="max-width:220px;border-radius:8px;display:block;margin-bottom:4px;cursor:pointer" onclick="window.open(this.src,\'_blank\')">';
       if(m.texto) corpo += '<div style="font-size:12px">'+m.texto+'</div>';
@@ -284,7 +314,7 @@ function renderMsgItem(m){
   }
   const saraBadge = isSara ? '<div style="font-size:9px;color:#f0c040;font-weight:700;margin-bottom:3px;letter-spacing:.5px">🤖 SARA</div>' : '';
   const bgSara = isSara ? 'background:rgba(240,192,64,.12);border:1px solid rgba(240,192,64,.2);' : '';
-  return '<div class="msg '+(out?'msg-out':'msg-in')+'" style="'+bgSara+'">'+saraBadge+corpo+'<div class="msg-time">'+t+'</div></div>';
+  return '<div class="msg '+(out?'msg-out':'msg-in')+'" data-msg-date="'+msgDate+'" style="'+bgSara+'">'+saraBadge+corpo+'<div class="msg-time">'+t+'</div></div>';
 }
 
 async function renderChatMsgs(cid){
@@ -292,7 +322,7 @@ async function renderChatMsgs(cid){
   if(!area) return;
   const memMsgs = chatMsgs[cid]||[];
   if(memMsgs.length){
-    area.innerHTML = memMsgs.map(renderMsgItem).join('');
+    area.innerHTML = _buildMsgsHtml(memMsgs);
     area.scrollTop = area.scrollHeight;
   }
   if(!memMsgs.length){
@@ -311,7 +341,7 @@ async function renderChatMsgs(cid){
     const extras = memMsgs.filter(m=>!visto.has((m.created_at||'')+'|'+(m.texto||m.text||'')));
     const todas = [...dbMsgs,...extras].sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
     area.innerHTML = todas.length
-      ? todas.map(renderMsgItem).join('')
+      ? _buildMsgsHtml(todas)
       : '<div data-placeholder style="text-align:center;font-size:12px;color:var(--muted2);padding:30px">Sem mensagens ainda.</div>';
   }catch(e){
     console.error('renderChatMsgs erro:', e);
@@ -319,6 +349,21 @@ async function renderChatMsgs(cid){
       area.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--muted2);padding:30px">Sem mensagens ainda.</div>';
   }
   area.scrollTop = area.scrollHeight;
+}
+
+// Monta HTML da lista de mensagens com separadores de data
+function _buildMsgsHtml(msgs){
+  let lastDate = null;
+  let html = '';
+  msgs.forEach(m=>{
+    const dia = m.created_at ? new Date(m.created_at).toDateString() : null;
+    if(dia && dia !== lastDate){
+      html += _dateSeparatorHtml(_fmtDateSeparator(m.created_at));
+      lastDate = dia;
+    }
+    html += renderMsgItem(m);
+  });
+  return html;
 }
 
 function renderChatContacts(){
@@ -402,6 +447,13 @@ function adicionarMsgLocal(cid, texto, tipo, mediaUrl){
   if(area){
     const ph = area.querySelector('[data-placeholder]');
     if(ph) ph.remove();
+    // Insere separador de data se necessário
+    const ultimaMsg = area.querySelector('.msg[data-msg-date]:last-of-type');
+    const ultimaData = ultimaMsg ? ultimaMsg.dataset.msgDate : null;
+    const novaData = msgObj.created_at ? new Date(msgObj.created_at).toDateString() : null;
+    if(novaData && novaData !== ultimaData){
+      area.insertAdjacentHTML('beforeend', _dateSeparatorHtml(_fmtDateSeparator(msgObj.created_at)));
+    }
     area.insertAdjacentHTML('beforeend', renderMsgItem(msgObj));
     area.scrollTop = area.scrollHeight;
   }
@@ -504,7 +556,6 @@ async function _enviarMidiaWpp(c){
       const path = `chat/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { data: upData, error: upErr } = await sb.storage.from('wpp-media').upload(path, fileRef);
       if(!upErr && upData){
-        // Salva o path — URL assinada gerada ao exibir
         storageUrl = `https://jjeogfafgbexgxqhubha.supabase.co/storage/v1/object/wpp-media/${path}`;
       }
     }catch(_){}
@@ -665,7 +716,6 @@ function _renderBotaoSara(bloqueada){
 async function toggleSara(){
   if(!activeChatId) return;
   const c = allClientes.find(x=>x.id===activeChatId);
-  // Usa telefone do cliente, ou o próprio activeChatId se for número (desconhecido)
   const telefone = c?.telefone || (!activeChatId.includes('-') ? activeChatId : null);
   if(!telefone){ notify('Não foi possível identificar o número','error'); return; }
   const raw = telefone.replace(/\D/g,'');
@@ -690,7 +740,6 @@ async function toggleSara(){
 async function _checarStatusSara(telefone){
   const raw = (String(telefone)||'').replace(/\D/g,'');
   if(!raw){ _renderBotaoSara(false); return; }
-  // Usa número completo com 55 — mesmo formato do Redis
   const numChave = raw.startsWith('55') ? raw : '55' + raw.slice(-11);
   const cfg = JSON.parse(localStorage.getItem('fp_evo_cfg')||'{}');
   try{
