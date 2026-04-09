@@ -758,11 +758,10 @@ function abrirCadastroClienteChat(){
 
 function setMsg(t){ const i=document.getElementById('chat-msg-input'); if(i){i.value=t;i.focus();} }
 
-// ── RECONEXÃO INTELIGENTE AO VOLTAR PARA A ABA ──
+// ── RECONEXÃO SSE AO VOLTAR PARA A ABA ──
+// Só reconecta o SSE se caiu — não mexe nos dados nem na tela
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState !== 'visible') return;
-
-  // 1. Reconecta SSE se a conexão caiu
   const cfg = JSON.parse(localStorage.getItem(EVO_CFG_KEY)||'{}');
   if(cfg.bridgeUrl){
     const sseCaiu = !sseSource || sseSource.readyState === EventSource.CLOSED;
@@ -770,19 +769,5 @@ document.addEventListener('visibilitychange', ()=>{
       console.log('[SSE] Reconectando após retorno à aba...');
       conectarSSE(cfg.bridgeUrl, cfg.secret||'FleetPro2025');
     }
-  }
-
-  // 2. Recarrega dados silenciosamente — sem tocar na tela
-  if(typeof carregarTudo === 'function'){
-    carregarTudo()
-      .then(()=>{
-        // 3. Se o chat estiver aberto e tiver conversa ativa, re-renderiza o chat
-        const paginaAtiva = document.querySelector('.page.active')?.id;
-        if(paginaAtiva === 'page-chat' && activeChatId){
-          renderChatMsgs(activeChatId);
-          renderChatContacts();
-        }
-      })
-      .catch(e=>console.warn('[reconexão] erro:', e));
   }
 });
