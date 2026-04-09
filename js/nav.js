@@ -22,7 +22,6 @@ function goPage(id, navEl){
   if(!cfg) return;
   if(!cfg.roles.includes(currentPerfil?.perfil)) id='denied';
 
-  // Remove tema Royal ao sair do painel investidor
   if(id !== 'investidores' && window._invLeave) window._invLeave();
 
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -121,7 +120,6 @@ async function editarUsuario(id){
   const p = allPerfis.find(x=>x.id===id);
   if(!p) return;
   const isInv = p.perfil==='investidor';
-  // Preenche campos do modal
   document.getElementById('eu-id').value        = id;
   document.getElementById('eu-nome').value      = p.nome||'';
   document.getElementById('eu-perfil').value    = p.perfil||'atendente';
@@ -131,7 +129,6 @@ async function editarUsuario(id){
   document.getElementById('eu-resp').value      = p.responsavel||'';
   document.getElementById('eu-tel').value       = p.telefone||'';
   document.getElementById('eu-email-emp').value = p.email_empresa||'';
-  // Mostra/esconde campos investidor
   const invEl = document.getElementById('eu-campos-inv');
   if(invEl) invEl.style.display = isInv ? '' : 'none';
   const errEl=document.getElementById('eu-err'); if(errEl) errEl.style.display='none';
@@ -179,6 +176,7 @@ async function salvarEdicaoUsuario(){
     if(btn){ btn.disabled=false; btn.textContent='✓ Salvar alterações'; }
   }
 }
+
 async function loadReservas(){
   const {data}=await sb.from('reservas')
     .select('*')
@@ -194,55 +192,64 @@ function renderDashboard(){
     ? allVeiculos.filter(v=>v.investidor_id===currentUser?.id)
     : allVeiculos;
 
-  const carros=meusVeiculos.filter(v=>v.tipo==='carro');
-  const motos=meusVeiculos.filter(v=>v.tipo==='moto');
-  document.getElementById('st-carros').textContent=carros.filter(v=>v.status==='disponivel').length;
-  document.getElementById('st-carros-s').textContent=`de ${carros.length} total`;
-  document.getElementById('st-motos').textContent=motos.filter(v=>v.status==='disponivel').length;
-  document.getElementById('st-motos-s').textContent=`de ${motos.length} total`;
-  document.getElementById('st-clientes').textContent=allClientes.length;
+  const carros = meusVeiculos.filter(v=>v.tipo==='carro');
+  const motos  = meusVeiculos.filter(v=>v.tipo==='moto');
+
+  // ── KPIs ──
+  document.getElementById('st-carros').textContent = carros.filter(v=>v.status==='disponivel').length;
+  document.getElementById('st-carros-s').textContent = `de ${carros.length} total`;
+  document.getElementById('st-motos').textContent = motos.filter(v=>v.status==='disponivel').length;
+  document.getElementById('st-motos-s').textContent = `de ${motos.length} total`;
+  document.getElementById('st-clientes').textContent = allClientes.length;
 
   const meusLocIds = new Set(meusVeiculos.map(v=>v.id));
   const meusLocs = isInv
     ? allLocacoes.filter(l=>meusLocIds.has(l.veiculo_id))
     : allLocacoes;
-  document.getElementById('st-locacoes').textContent=meusLocs.filter(l=>l.status==='ativa'||!l.status).length;
+
+  document.getElementById('st-locacoes').textContent = meusLocs.filter(l=>l.status==='ativa'||!l.status).length;
 
   const atrasados = meusLocs.filter(l=>Math.ceil((new Date(l.data_fim)-new Date())/86400000) < 0);
-  const alertVal = document.getElementById('st-alert-val');
-  const alertSub = document.getElementById('st-alert-sub');
+  const alertVal  = document.getElementById('st-alert-val');
+  const alertSub  = document.getElementById('st-alert-sub');
   const alertCard = document.getElementById('st-alert-card');
   if(alertVal){
     alertVal.textContent = atrasados.length;
     if(alertSub) alertSub.textContent = atrasados.length === 0 ? 'Tudo em dia ✓' : `veículo${atrasados.length>1?'s':''} com devolução atrasada`;
     if(alertCard){
-      if(atrasados.length > 0){ alertCard.classList.add('stat-alert'); alertVal.style.color='#dc2626'; }
-      else { alertCard.classList.remove('stat-alert'); alertVal.style.color='#16a34a'; }
+      if(atrasados.length > 0){ alertCard.classList.add('stat-alert'); alertVal.style.color=''; }
+      else { alertCard.classList.remove('stat-alert'); alertVal.style.color='#4ade80'; }
     }
   }
 
-  const dl=document.getElementById('dash-loc');
-  dl.innerHTML=meusLocs.length?meusLocs.map(l=>{
-    const diff=Math.ceil((new Date(l.data_fim)-new Date())/86400000);
-    const b=diff<0?'badge-red':diff===0?'badge-yellow':'badge-green';
-    const lb=diff<0?'Atrasado':diff===0?'Hoje':'No prazo';
-    return `<tr style="cursor:pointer" onclick="goPage('clientes');setTimeout(()=>{document.getElementById('s-clientes').value='${(l.clientes?.nome||'').replace(/'/g,"\\'")}';renderClientes();},400)" title="Ver cliente">
-      <td><div style="display:flex;align-items:center;gap:8px"><div class="vi ${l.veiculos?.tipo==='carro'?'vi-car':'vi-moto'}">${l.veiculos?.tipo==='carro'?'🚗':'🏍️'}</div><div><div style="font-weight:500">${l.veiculos?.modelo||'—'}</div><div style="font-size:11px;color:var(--muted)">${l.veiculos?.placa||''}</div></div></div></td>
-      <td>${l.clientes?.nome||'—'}</td>
-      <td>${fmtData(l.data_fim)}</td>
-      <td><span class="badge ${b}">${lb}</span></td>
-    </tr>`;
-  }).join(''):'<tr class="empty-row"><td colspan="4">Nenhuma locação ativa</td></tr>';
+  // ── TABELA LOCAÇÕES ──
+  const dl = document.getElementById('dash-loc');
+  if(dl){
+    dl.innerHTML = meusLocs.length ? meusLocs.slice(0,5).map(l=>{
+      const diff = Math.ceil((new Date(l.data_fim)-new Date())/86400000);
+      const b  = diff<0 ? 'badge-red' : diff===0 ? 'badge-yellow' : 'badge-green';
+      const lb = diff<0 ? 'Atrasado'  : diff===0 ? 'Hoje'         : 'No prazo';
+      return `<tr style="cursor:pointer" onclick="goPage('locacoes')" title="Ver locações">
+        <td><div style="display:flex;align-items:center;gap:8px">
+          <div class="vi ${l.veiculos?.tipo==='carro'?'vi-car':'vi-moto'}">${l.veiculos?.tipo==='carro'?'🚗':'🏍️'}</div>
+          <div><div style="font-weight:500">${l.veiculos?.modelo||'—'}</div><div style="font-size:11px;color:var(--muted)">${l.veiculos?.placa||''}</div></div>
+        </div></td>
+        <td>${l.clientes?.nome||'—'}</td>
+        <td>${fmtData(l.data_fim)}</td>
+        <td><span class="badge ${b}">${lb}</span></td>
+      </tr>`;
+    }).join('') : '<tr class="empty-row"><td colspan="4">Nenhuma locação ativa</td></tr>';
+  }
 
-  // Reservas ativas no dashboard
+  // ── RESERVAS ──
   const dr = document.getElementById('dash-reservas');
   if(dr){
     const reservasAtivas = allReservas.filter(r=>r.status==='ativa');
-    dr.innerHTML = reservasAtivas.length ? reservasAtivas.map(r=>{
+    dr.innerHTML = reservasAtivas.length ? reservasAtivas.slice(0,4).map(r=>{
       const cli  = allClientes.find(c=>c.id===r.cliente_id);
       const veic = allVeiculos.find(v=>v.id===r.veiculo_id);
       const diff = Math.ceil((new Date(r.data_inicio)-new Date())/86400000);
-      const lblDiff = diff<=0?'Hoje':`em ${diff} dia${diff>1?'s':''}`;
+      const lblDiff = diff<=0 ? 'Hoje' : `em ${diff} dia${diff>1?'s':''}`;
       return `<tr style="cursor:pointer" onclick="goPage('reservas')" title="Ver reservas">
         <td><div style="display:flex;align-items:center;gap:8px">
           <div class="vi ${veic?.tipo==='carro'?'vi-car':'vi-moto'}">${veic?.tipo==='carro'?'🚗':'🏍️'}</div>
@@ -256,12 +263,257 @@ function renderDashboard(){
     }).join('') : '<tr class="empty-row"><td colspan="4">Nenhuma reserva ativa</td></tr>';
   }
 
-  const dm=document.getElementById('dash-man');
-  const meusMantIds = new Set(meusVeiculos.map(v=>v.id));
-  const mativas = (isInv
-    ? allManutencoes.filter(m=>meusMantIds.has(m.veiculo_id))
-    : allManutencoes).filter(m=>m.status!=='concluida');
-  dm.innerHTML=mativas.length?mativas.map(m=>`<tr><td><div style="font-weight:500">${m.veiculos?.modelo||'—'}</div><div style="font-size:11px;color:var(--muted)">${m.veiculos?.placa||''}</div></td><td>${m.tipo}</td><td><span class="badge ${m.status==='pendente'?'badge-yellow':'badge-blue'}">${m.status==='pendente'?'Pendente':'Em andamento'}</span></td></tr>`).join(''):'<tr class="empty-row"><td colspan="3">Nenhuma</td></tr>';
+  // ── MANUTENÇÕES ──
+  const dm = document.getElementById('dash-man');
+  if(dm){
+    const meusMantIds = new Set(meusVeiculos.map(v=>v.id));
+    const mativas = (isInv
+      ? allManutencoes.filter(m=>meusMantIds.has(m.veiculo_id))
+      : allManutencoes).filter(m=>m.status!=='concluida');
+    dm.innerHTML = mativas.length ? mativas.slice(0,5).map(m=>`
+      <tr>
+        <td><div style="font-weight:500">${m.veiculos?.modelo||'—'}</div><div style="font-size:11px;color:var(--muted)">${m.veiculos?.placa||''}</div></td>
+        <td>${m.tipo}</td>
+        <td><span class="badge ${m.status==='pendente'?'badge-yellow':'badge-blue'}">${m.status==='pendente'?'Pendente':'Em andamento'}</span></td>
+      </tr>`).join('') : '<tr class="empty-row"><td colspan="3">Nenhuma</td></tr>';
+  }
+
+  // ── AGENDA SEMANAL ──
+  _renderAgendaSemanal(meusLocs, allReservas);
+
+  // ── STATUS DA FROTA ──
+  _renderFrotaStatus(meusVeiculos, meusLocs);
+
+  // ── ATIVIDADE RECENTE ──
+  _renderAtividade(meusLocs, allManutencoes, allReservas);
+}
+
+function _renderAgendaSemanal(locacoes, reservas){
+  const grid = document.getElementById('dash-agenda-grid');
+  const label = document.getElementById('dash-semana-label');
+  if(!grid) return;
+
+  const hoje = new Date();
+  // Encontra segunda-feira da semana atual
+  const diaSem = hoje.getDay(); // 0=dom, 1=seg...
+  const diffSeg = diaSem === 0 ? -6 : 1 - diaSem;
+  const seg = new Date(hoje);
+  seg.setDate(hoje.getDate() + diffSeg);
+  seg.setHours(0,0,0,0);
+
+  const dias = [];
+  for(let i=0; i<7; i++){
+    const d = new Date(seg);
+    d.setDate(seg.getDate() + i);
+    dias.push(d);
+  }
+
+  if(label){
+    const fmt = d => d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+    label.textContent = `${fmt(dias[0])} – ${fmt(dias[6])}`;
+  }
+
+  grid.innerHTML = dias.map(d=>{
+    const dStr = d.toISOString().slice(0,10);
+    const isHoje = d.toDateString() === hoje.toDateString();
+
+    // Conta locações que abrangem este dia
+    const locsNoDia = locacoes.filter(l=>{
+      const ini = new Date(l.data_inicio); ini.setHours(0,0,0,0);
+      const fim = new Date(l.data_fim);    fim.setHours(23,59,59,999);
+      return d >= ini && d <= fim;
+    });
+
+    // Conta atrasos neste dia
+    const atrasosNoDia = locsNoDia.filter(l=>Math.ceil((new Date(l.data_fim)-new Date())/86400000) < 0 && !isHoje);
+
+    // Conta reservas neste dia
+    const resNoDia = reservas.filter(r=>{
+      if(r.status !== 'ativa') return false;
+      const ini = new Date(r.data_inicio); ini.setHours(0,0,0,0);
+      const fim = new Date(r.data_fim);    fim.setHours(23,59,59,999);
+      return d >= ini && d <= fim;
+    });
+
+    const total = locsNoDia.length;
+    const temAtraso = atrasosNoDia.length > 0;
+    const temReserva = resNoDia.length > 0;
+
+    let bg = 'rgba(79,70,229,0.06)';
+    let cor = 'var(--muted2)';
+    let borderColor = 'transparent';
+
+    if(temAtraso){
+      bg = 'rgba(220,38,38,0.2)';
+      cor = '#F87171';
+      borderColor = 'rgba(220,38,38,0.3)';
+    } else if(total > 0){
+      const intensity = Math.min(0.15 + total * 0.12, 0.55);
+      bg = `rgba(79,70,229,${intensity})`;
+      cor = '#C7D2FE';
+      borderColor = 'rgba(79,70,229,0.3)';
+    } else if(temReserva){
+      bg = 'rgba(217,119,6,0.18)';
+      cor = '#FCD34D';
+      borderColor = 'rgba(217,119,6,0.3)';
+    }
+
+    const borda = isHoje ? '2px solid #4F46E5' : `1px solid ${borderColor}`;
+    const peso  = isHoje ? '700' : '400';
+
+    return `<div onclick="goPage('calendario')" style="
+      height:44px;
+      background:${bg};
+      border-radius:8px;
+      border:${borda};
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition:all .15s;
+      gap:2px;
+    " onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter=''">
+      <div style="font-size:11px;color:${isHoje?'#818CF8':cor};font-weight:${peso}">${d.getDate()}</div>
+      ${total > 0 ? `<div style="font-size:9px;color:${cor};opacity:.8">${total}</div>` : (temReserva ? `<div style="font-size:9px;color:#FCD34D;opacity:.7">R</div>` : '')}
+    </div>`;
+  }).join('');
+}
+
+function _renderFrotaStatus(veiculos, locacoes){
+  const el = document.getElementById('dash-frota-list');
+  if(!el) return;
+
+  if(!veiculos.length){
+    el.innerHTML = '<div style="color:var(--muted2);font-size:13px;text-align:center;padding:20px 0">Nenhum veículo cadastrado</div>';
+    return;
+  }
+
+  // Mostra veículos em locação ativa ou com status relevante (até 5)
+  const relevantes = veiculos
+    .filter(v=>v.status !== 'disponivel' || locacoes.some(l=>l.veiculo_id===v.id))
+    .slice(0, 5);
+
+  const todos = relevantes.length ? relevantes : veiculos.slice(0, 5);
+
+  const STATUS_CFG = {
+    disponivel:  { label:'Disponível', bg:'rgba(22,163,74,0.10)',  border:'rgba(22,163,74,0.25)',  cor:'#4ade80' },
+    alugado:     { label:'Locado',     bg:'rgba(79,70,229,0.12)',  border:'rgba(79,70,229,0.3)',   cor:'#818CF8' },
+    reservado:   { label:'Reservado',  bg:'rgba(217,119,6,0.12)',  border:'rgba(217,119,6,0.25)',  cor:'#FCD34D' },
+    manutencao:  { label:'Manutenção', bg:'rgba(220,38,38,0.10)',  border:'rgba(220,38,38,0.25)',  cor:'#F87171' },
+    preparacao:  { label:'Preparação', bg:'rgba(107,114,128,0.10)',border:'rgba(107,114,128,0.2)', cor:'var(--muted)' },
+  };
+
+  el.innerHTML = todos.map(v=>{
+    const cfg = STATUS_CFG[v.status] || STATUS_CFG.disponivel;
+    const locAtiva = locacoes.find(l=>l.veiculo_id===v.id && (l.status==='ativa'||!l.status));
+    const clienteNome = locAtiva?.clientes?.nome || '';
+    const diff = locAtiva ? Math.ceil((new Date(locAtiva.data_fim)-new Date())/86400000) : null;
+    const diffLabel = diff !== null ? (diff < 0 ? `${Math.abs(diff)}d atrasado` : diff === 0 ? 'Hoje' : `${diff}d restantes`) : '';
+    const isAtrasado = diff !== null && diff < 0;
+
+    return `<div onclick="goPage('${v.tipo==='carro'?'carros':'motos'}')" style="
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 10px;
+      background:${cfg.bg};
+      border:1px solid ${cfg.border};
+      border-radius:8px;
+      cursor:pointer;
+      transition:all .15s;
+    " onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter=''">
+      <div style="font-size:16px">${v.tipo==='carro'?'🚗':'🏍️'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.marca} ${v.modelo}</div>
+        <div style="font-size:10px;color:var(--muted)">${v.placa}${clienteNome?' · '+clienteNome:''}</div>
+      </div>
+      <div style="flex-shrink:0;text-align:right">
+        <div style="font-size:10px;font-weight:600;color:${isAtrasado?'#F87171':cfg.cor}">${cfg.label}</div>
+        ${diffLabel ? `<div style="font-size:9px;color:${isAtrasado?'#F87171':'var(--muted)'}">${diffLabel}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _renderAtividade(locacoes, manutencoes, reservas){
+  const el = document.getElementById('dash-atividade');
+  if(!el) return;
+
+  const eventos = [];
+
+  // Locações recentes
+  locacoes.slice(0,4).forEach(l=>{
+    const diff = Math.ceil((new Date(l.data_fim)-new Date())/86400000);
+    const atrasada = diff < 0;
+    eventos.push({
+      cor:   atrasada ? '#F87171' : '#818CF8',
+      texto: atrasada
+        ? `Devolução atrasada — ${l.veiculos?.modelo||'?'} / ${l.clientes?.nome||'?'}`
+        : `Locação ativa — ${l.veiculos?.modelo||'?'} / ${l.clientes?.nome||'?'}`,
+      tempo: l.created_at,
+      page:  'locacoes',
+    });
+  });
+
+  // Reservas ativas
+  reservas.filter(r=>r.status==='ativa').slice(0,2).forEach(r=>{
+    const cli  = allClientes.find(c=>c.id===r.cliente_id);
+    const veic = allVeiculos.find(v=>v.id===r.veiculo_id);
+    eventos.push({
+      cor:   '#FCD34D',
+      texto: `Reserva — ${veic?.modelo||'?'} / ${cli?.nome||'?'}`,
+      tempo: r.created_at,
+      page:  'reservas',
+    });
+  });
+
+  // Manutenções pendentes
+  manutencoes.filter(m=>m.status!=='concluida').slice(0,2).forEach(m=>{
+    eventos.push({
+      cor:   '#F87171',
+      texto: `Manutenção — ${m.veiculos?.modelo||'?'} (${m.tipo})`,
+      tempo: m.created_at,
+      page:  'historico',
+    });
+  });
+
+  // Ordena por data decrescente
+  eventos.sort((a,b)=>new Date(b.tempo||0)-new Date(a.tempo||0));
+
+  if(!eventos.length){
+    el.innerHTML = '<div style="color:var(--muted2);font-size:13px;text-align:center;padding:20px 0">Sem atividade recente</div>';
+    return;
+  }
+
+  el.innerHTML = eventos.slice(0,6).map((ev,i,arr)=>`
+    <div onclick="goPage('${ev.page}')" style="
+      display:flex;
+      gap:10px;
+      padding:8px 0;
+      border-bottom:${i < arr.length-1 ? '1px solid var(--border)' : 'none'};
+      cursor:pointer;
+      transition:background .1s;
+    " onmouseover="this.style.background='rgba(79,70,229,0.05)'" onmouseout="this.style.background=''">
+      <div style="width:7px;height:7px;border-radius:50%;background:${ev.cor};margin-top:4px;flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.texto}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:1px">${_tempoRelativo(ev.tempo)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function _tempoRelativo(isoStr){
+  if(!isoStr) return '—';
+  const diff = Date.now() - new Date(isoStr).getTime();
+  const min  = Math.floor(diff/60000);
+  const h    = Math.floor(diff/3600000);
+  const d    = Math.floor(diff/86400000);
+  if(min < 1)  return 'agora';
+  if(min < 60) return `há ${min}min`;
+  if(h   < 24) return `há ${h}h`;
+  if(d   < 7)  return `há ${d} dia${d>1?'s':''}`;
+  return new Date(isoStr).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
 }
 
 // ══ VEÍCULOS (render chamado de veiculos.js) ══
