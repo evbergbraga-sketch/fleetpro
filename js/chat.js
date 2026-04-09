@@ -762,29 +762,7 @@ function setMsg(t){ const i=document.getElementById('chat-msg-input'); if(i){i.v
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState !== 'visible') return;
 
-  // 1. Recria cliente Supabase sem disparar onAuthStateChange
-  // Guarda a página ativa para não perder navegação
-  const fpUrl = localStorage.getItem('fp_url');
-  const fpKey = localStorage.getItem('fp_key');
-  if(fpUrl && fpKey && typeof createClient !== 'undefined'){
-    const paginaAtual = document.querySelector('.page.active')?.id;
-    const navAtual = document.querySelector('.nav-item.active')?.id;
-    sb = createClient(fpUrl, fpKey, {
-      auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:false }
-    });
-    // Restaura a página que estava ativa
-    if(paginaAtual){
-      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-      const pg = document.getElementById(paginaAtual);
-      if(pg) pg.classList.add('active');
-      const nv = navAtual ? document.getElementById(navAtual) : null;
-      if(nv) nv.classList.add('active');
-    }
-    console.log('[Supabase] Cliente recriado após retorno à aba');
-  }
-
-  // 2. Reconecta SSE se caiu
+  // 1. Reconecta SSE se caiu
   const cfg = JSON.parse(localStorage.getItem(EVO_CFG_KEY)||'{}');
   if(cfg.bridgeUrl){
     const sseCaiu = !sseSource || sseSource.readyState === EventSource.CLOSED;
