@@ -66,7 +66,6 @@ function receberMsgSSE(msg){
   const cidPorNumero = encontrarClientePorNumero(msg.numero);
   const cid          = cidPorId || cidPorNumero || msg.numero;
 
-  // Detecta SARA e atendente
   const isSara     = (msg.nomeCliente||'').includes('SARA') || (msg.nomeCliente||'').includes('🤖');
   const isAtendente = msg.atendente===true || (msg.nomeCliente||'').includes('Atendente');
   const fromMe = isSara || isAtendente
@@ -95,7 +94,6 @@ function receberMsgSSE(msg){
     if(area){
       const ph = area.querySelector('[data-placeholder]');
       if(ph) ph.remove();
-      // Insere separador de data se necessário antes da nova mensagem via SSE
       const ultimaMsg = area.querySelector('.msg[data-msg-date]:last-of-type');
       const ultimaData = ultimaMsg ? ultimaMsg.dataset.msgDate : null;
       const novaData = msgObj.created_at ? new Date(msgObj.created_at).toDateString() : null;
@@ -162,7 +160,6 @@ function preencherCamposWpp(){
     if(el) el.textContent = cfg.bridgeUrl+'/webhook/wpp  (header x-secret: '+(cfg.secret||'FleetPro2025')+')';
     conectarSSE(cfg.bridgeUrl, cfg.secret||'FleetPro2025');
     setWppStatus(true,'Conectado');
-    // Checa status SARA do chat ativo ao recarregar
     setTimeout(()=>{
       if(activeChatId){
         const c = allClientes.find(x=>x.id===activeChatId);
@@ -351,7 +348,6 @@ async function renderChatMsgs(cid){
   area.scrollTop = area.scrollHeight;
 }
 
-// Monta HTML da lista de mensagens com separadores de data
 function _buildMsgsHtml(msgs){
   let lastDate = null;
   let html = '';
@@ -411,7 +407,6 @@ function abrirChat(cid){
     document.getElementById('chat-info').textContent = cid+' · Clique em Cadastrar para registrar';
     const btnCad = document.getElementById('btn-cadastrar-chat');
     if(btnCad) btnCad.style.display = 'flex';
-    // Mostra SARA mesmo para desconhecidos
     const btnSara2 = document.getElementById('btn-sara-toggle');
     if(btnSara2) btnSara2.style.display = '';
     _checarStatusSara(cid);
@@ -427,7 +422,6 @@ function abrirChat(cid){
   document.getElementById('chat-info').textContent = c.telefone ? '📱 '+c.telefone : 'Sem telefone';
   const btnCad = document.getElementById('btn-cadastrar-chat');
   if(btnCad) btnCad.style.display = 'none';
-  // Botão SARA
   if(c.telefone) _checarStatusSara(c.telefone);
   renderChatMsgs(cid);
   renderChatContacts();
@@ -447,7 +441,6 @@ function adicionarMsgLocal(cid, texto, tipo, mediaUrl){
   if(area){
     const ph = area.querySelector('[data-placeholder]');
     if(ph) ph.remove();
-    // Insere separador de data se necessário
     const ultimaMsg = area.querySelector('.msg[data-msg-date]:last-of-type');
     const ultimaData = ultimaMsg ? ultimaMsg.dataset.msgDate : null;
     const novaData = msgObj.created_at ? new Date(msgObj.created_at).toDateString() : null;
@@ -549,7 +542,6 @@ async function _enviarMidiaWpp(c){
       try{ msg = JSON.parse(t)?.message||t; }catch(_){}
       throw new Error(msg);
     }
-    // Faz upload para o Supabase Storage para persistir no histórico
     let storageUrl = null;
     try{
       const ext = fileRef.name.split('.').pop();
@@ -679,10 +671,8 @@ async function enviarContratoWpp(){
   }
 }
 
-// ── PERFIL CLIENTE — função em clientes.js ──
-
 // ── BLOQUEIO DA SARA ──
-const _saraBloqueadas = new Set(); // números bloqueados localmente
+const _saraBloqueadas = new Set();
 
 function _atualizarBotaoSara(numero, bloqueada){
   const rawN = (numero||'').replace(/\D/g,'');
@@ -768,13 +758,24 @@ function abrirCadastroClienteChat(){
 
 function setMsg(t){ const i=document.getElementById('chat-msg-input'); if(i){i.value=t;i.focus();} }
 
-// Reconexão ao voltar para a aba
+// ── RECONEXÃO INTELIGENTE AO VOLTAR PARA A ABA ──
+// Substitui o window.location.reload() — reconecta SSE sem perder dados da tela
 document.addEventListener('visibilitychange', ()=>{
-  if(document.visibilityState !== 'visible'){
-    const pageAtiva = document.querySelector('.page.active')?.id?.replace('page-','');
-    if(pageAtiva) sessionStorage.setItem('fp_last_page', pageAtiva);
-    if(activeChatId) sessionStorage.setItem('fp_last_chat', activeChatId);
-    return;
+  if(document.visibilityState !== 'visible') return;
+
+  // 1. Reconecta SSE se a conexão caiu
+  const cfg = JSON.parse(localStorage.getItem(EVO_CFG_KEY)||'{}');
+  if(cfg.bridgeUrl){
+    const sseCaiu = !sseSource || sseSource.readyState === EventSource.CLOSED;
+    if(sseCaiu){
+      console.log('[SSE] Reconectando após retorno à aba...');
+      conectarSSE(cfg.bridgeUrl, cfg.secret||'FleetPro2025');
+    }
   }
-  window.location.reload();
+
+  // 2. Recarrega dados silenciosamente em background
+  // Não toca na tela, não apaga formulários, não perde estado
+  if(typeof carregarTudo === 'function'){
+    carregarTudo().catch(e=>console.warn('[reconexão] carregarTudo erro:', e));
+  }
 });
