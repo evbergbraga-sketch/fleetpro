@@ -190,28 +190,15 @@ function setMsg(txt){
   });
 })();
 
-// ══ BOTÃO ATUALIZAR — feedback visual ══
+// ══ BOTÃO ATUALIZAR — reload completo ══
 (function(){
   document.addEventListener('DOMContentLoaded', ()=>{
-    // Encontra o botão atualizar pelo conteúdo ↻
     const btn = [...document.querySelectorAll('.topbar-btn')].find(b=>b.textContent.trim()==='↻');
     if(!btn) return;
-    btn.onclick = async function(){
+    btn.onclick = function(){
       btn.style.transform = 'rotate(360deg)';
-      btn.style.transition = 'transform .6s ease';
-      btn.disabled = true;
-      try{
-        await carregarTudo();
-        notify('Dados atualizados!','success');
-      }catch(e){
-        notify('Erro ao atualizar','error');
-      }finally{
-        setTimeout(()=>{
-          btn.style.transform = '';
-          btn.style.transition = '';
-          btn.disabled = false;
-        }, 700);
-      }
+      btn.style.transition = 'transform .5s ease';
+      setTimeout(()=>window.location.reload(), 400);
     };
   });
 })();
