@@ -190,12 +190,17 @@ function setMsg(txt){
   });
 })();
 
-// ══ BOTÃO ATUALIZAR — reload completo ══
+// ══ BOTÃO ATUALIZAR — reload completo voltando para a página atual ══
 (function(){
   document.addEventListener('DOMContentLoaded', ()=>{
     const btn = [...document.querySelectorAll('.topbar-btn')].find(b=>b.textContent.trim()==='↻');
     if(!btn) return;
     btn.onclick = function(){
+      // Salva a página ativa antes do reload
+      const pageAtiva = document.querySelector('.page.active')?.id?.replace('page-','');
+      const chatAtivo = window.activeChatId || null;
+      if(pageAtiva) sessionStorage.setItem('fp_last_page', pageAtiva);
+      if(chatAtivo) sessionStorage.setItem('fp_last_chat', chatAtivo);
       btn.style.transform = 'rotate(360deg)';
       btn.style.transition = 'transform .5s ease';
       setTimeout(()=>window.location.reload(), 400);
