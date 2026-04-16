@@ -268,6 +268,14 @@ function _injectInvCss(){
       outline: none; cursor: pointer; flex: 1; min-width: 160px;
     }
 
+    /* ── Esconde busca e sino para investidor ── */
+    body.inv-active .topbar-search,
+    body.inv-active .notif-btn { display: none !important; }
+
+    /* ── Esconde busca e sino para investidor ── */
+    body.inv-active #busca-wrapper,
+    body.inv-active .notif-btn { display: none !important; }
+
     /* ── Empty ── */
     .inv-empty { text-align: center; padding: 28px; color: ${INV_THEME.gray}; font-size: 13px; }
 
