@@ -306,19 +306,16 @@ function renderInvestidores(){
   const locsFinal     = allLocacoes.filter(l=>ids.has(l.veiculo_id));
   const hoje          = new Date();
   const qtdMotos      = veiculosFinal.filter(v=>v.tipo==='moto').length;
-  // Veículos "em preparação": ainda dentro do buffer de 30 dias
   const emPrepLista   = veiculosFinal.filter(v=>v.status==='preparacao'&&
     Math.ceil((hoje-new Date(v.data_entrada||v.created_at))/86400000)<30);
-  // Rendimento fixo: TODAS as motos rendem R$ 825/mês
-  // Única exceção: motos nos primeiros 30 dias de preparação
   const qtdEmPrepAtiva = emPrepLista.length;
   const qtdAtivos      = qtdMotos - qtdEmPrepAtiva;
   const investimento   = qtdMotos * VALOR_MOTO;
   window._invInvestimento = investimento;
   window._invEmPrep   = emPrepLista;
-  const rendMensal    = qtdAtivos * RENDIMENTO_MES; // ex: 2 motos - 1 prep = 1 × 825 = 825 até liberar
+  const rendMensal    = qtdAtivos * RENDIMENTO_MES;
   const rendAnual     = rendMensal * 12;
-  const investimentoAtivo = qtdAtivos * VALOR_MOTO; // só motos que já rendem
+  const investimentoAtivo = qtdAtivos * VALOR_MOTO;
   const rentabilidade = investimentoAtivo > 0 ? ((rendMensal/investimentoAtivo)*100).toFixed(2) : '0.00';
   const totalVeic     = veiculosFinal.length;
   const ocupFinal     = totalVeic > 0 ? Math.round(veiculosFinal.filter(v=>v.status==='alugado').length/totalVeic*100) : 0;
@@ -333,7 +330,6 @@ function renderInvestidores(){
       </select>
     </div>` : '';
 
-  // Nav mobile fixa na parte inferior (visível só em mobile via CSS)
   const mobileNav = `
     <div class="inv-mobile-nav">
       <button class="inv-mobile-nav-btn ${_invPage==='inv-dashboard'?'active':''}" onclick="goInvPage('inv-dashboard')">
@@ -381,7 +377,7 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
     </div>
   </div>
 
-  <!-- STATS FINANCEIROS (2x2 mobile / 4x1 desktop) -->
+  <!-- STATS FINANCEIROS -->
   <div class="inv-stat-grid">
     <div class="inv-stat">
       <span class="inv-stat-icon">💼</span>
@@ -411,7 +407,7 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
     </div>
   </div>
 
-  <!-- STATS OPERACIONAIS (2x2 mobile / 3x1 desktop — último span 2 no mobile) -->
+  <!-- STATS OPERACIONAIS -->
   <div class="inv-stat-grid-3">
     <div class="inv-stat">
       <span class="inv-stat-icon">🏍️</span>
@@ -447,7 +443,7 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
     </div>
   </div>
 
-  <!-- PROJEÇÃO (2x2 mobile / 4x1 desktop) -->
+  <!-- PROJEÇÃO -->
   <div class="inv-card">
     <div class="inv-card-header">
       <span class="inv-card-title">📊 Projeção de rendimentos</span>
@@ -455,12 +451,9 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
     </div>
     <div class="inv-proj-grid">
       ${[1,3,6,12].map(m=>{
-        // Regra: moto em prep leva 1 mês inteiro para ficar pronta
-        // Só entra no rendimento a partir do 2º mês em diante
         let rendPrep = 0;
         let prepCount = 0;
         (window._invEmPrep||[]).forEach(v=>{
-          // Meses que vai render = período total - 1 mês de preparação
           const mesesAtivos = Math.max(0, m - 1);
           if(mesesAtivos > 0){
             rendPrep += RENDIMENTO_MES * mesesAtivos;
@@ -493,7 +486,7 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
     </div>
   </div>
 
-  <!-- LOCAÇÕES -->
+  <!-- LOCAÇÕES — sem coluna Total -->
   <div class="inv-card">
     <div class="inv-card-header">
       <span class="inv-card-title">📋 Histórico de locações</span>
@@ -501,7 +494,7 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
     <div class="inv-table-wrap">
       <table>
         <thead>
-          <tr><th>Veículo</th><th>Cliente</th><th>Período</th><th>Total</th><th>Status</th></tr>
+          <tr><th>Veículo</th><th>Cliente</th><th>Período</th><th>Status</th></tr>
         </thead>
         <tbody>
           ${locsFinal.length ? locsFinal.map(l=>`
@@ -512,9 +505,8 @@ function _renderInvDashboard(veiculosFinal, locsFinal, qtdMotos, investimento, r
             </td>
             <td style="color:#aaa">${l.clientes?.nome||'—'}</td>
             <td style="font-size:12px;color:#666;white-space:nowrap">${fmtData(l.data_inicio)} → ${fmtData(l.data_fim)}</td>
-            <td style="color:${INV_THEME.green};font-weight:700;white-space:nowrap">R$ ${(l.total||0).toFixed(2)}</td>
             <td>${l.status==='ativa'?'<span class="inv-badge-green">Ativa</span>':'<span class="inv-badge-gray">Encerrada</span>'}</td>
-          </tr>`).join('') : `<tr><td colspan="5" class="inv-empty">Nenhuma locação registrada.</td></tr>`}
+          </tr>`).join('') : `<tr><td colspan="4" class="inv-empty">Nenhuma locação registrada.</td></tr>`}
         </tbody>
       </table>
     </div>
@@ -565,7 +557,6 @@ function _renderEmPreparacao(veiculosFinal){
           }
         </div>
       </div>
-      <!-- Barra de progresso -->
       <div style="background:#1a1a1a;border-radius:99px;height:8px;margin-bottom:8px;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#1a5276,${barColor});border-radius:99px;transition:width .6s ease"></div>
       </div>
@@ -608,28 +599,17 @@ function _renderAcumulado(pagamentos){
   if(!body) return;
 
   const total = pagamentos.reduce((acc,p)=>acc+(p.valor||0), 0);
-
-  // Meses pagos (únicos por referência ou mês)
   const mesesPagos = new Set(pagamentos.map(p=>p.referencia||p.data_pagamento?.slice(0,7)||'')).size;
-
-  // Percentual recuperado do investimento
   const investimento = window._invInvestimento||0;
   const pctRecuperado = investimento>0 ? ((total/investimento)*100).toFixed(1) : '0.0';
-
-  // Diferença para recuperar 100% do capital
   const faltam = Math.max(0, (window._invInvestimento||0) - total);
-
-  // Progresso da barra (cap em 100%)
   const pctBarra = Math.min(100, parseFloat(pctRecuperado));
-
-  // Cor da barra
   const barColor = pctBarra >= 100 ? '#f0c040' : pctBarra >= 50 ? INV_THEME.green : INV_THEME.greenD;
 
   if(periodo) periodo.textContent = mesesPagos > 0 ? `${mesesPagos} pagamento${mesesPagos!==1?'s':''}` : 'Sem pagamentos';
 
   body.innerHTML = `
     <div style="padding:16px 20px 20px">
-      <!-- Valor principal -->
       <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
         <div>
           <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:${INV_THEME.gray};margin-bottom:6px">Total recebido</div>
@@ -645,15 +625,11 @@ function _renderAcumulado(pagamentos){
           <div style="font-size:11px;color:${INV_THEME.gray2}">recuperado</div>
         </div>
       </div>
-
-      <!-- Barra de progresso -->
       <div style="background:#1a1a1a;border-radius:99px;height:10px;margin-bottom:14px;overflow:hidden">
         <div style="height:100%;width:${pctBarra}%;background:linear-gradient(90deg,${INV_THEME.greenD},${barColor});border-radius:99px;transition:width .6s ease;position:relative">
           ${pctBarra>10?`<div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:8px;font-weight:700;color:#000">${pctRecuperado}%</div>`:''}
         </div>
       </div>
-
-      <!-- 3 cards abaixo -->
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
         <div style="background:#0d1f12;border:1px solid ${INV_THEME.border2};border-radius:10px;padding:12px;text-align:center">
           <div style="font-size:10px;color:${INV_THEME.gray};text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Rendimento<br>médio/mês</div>
@@ -735,7 +711,6 @@ async function excluirPagamento(id){
 
 // ══ MEUS VEÍCULOS ══
 function _renderInvVeiculos(veiculosFinal){
-  // Cache global para o modal acessar sem JSON inline
   window._invVCache = veiculosFinal;
 
   const rows = veiculosFinal.length
@@ -774,12 +749,10 @@ function _renderInvVeiculos(veiculosFinal){
     </div>
   </div>
 
-  <!-- MODAL VEÍCULO ROYAL -->
   <div id="inv-modal-veiculo" onclick="if(event.target===this)_fecharModalVeiculoInv()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);">
     <div id="inv-modal-veiculo-body" style="background:#111;border:1px solid #2a2a2a;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;"></div>
   </div>`;
 }
-
 
 // ══ RASTREADOR ══
 function _renderInvRastreador(){
@@ -863,7 +836,6 @@ window._abrirModalVeiculoInv = function(idx){
     {l:'Observações',v: v.observacoes||'—'},
   ];
 
-  // Cria o overlay se não existir
   let modal = document.getElementById('inv-modal-veiculo');
   if(!modal){
     modal = document.createElement('div');
